@@ -24,22 +24,33 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
     .map((p) => ({ player: p, money: playerMoney.get(p.id) || 0 }))
     .sort((a, b) => b.money - a.money);
 
-  // Holes won
+  // Holes won (sole lowest) vs tied (shared lowest)
   const holesWon = new Map<string, number>();
-  players.forEach((p) => holesWon.set(p.id, 0));
+  const holesTied = new Map<string, number>();
+  players.forEach((p) => {
+    holesWon.set(p.id, 0);
+    holesTied.set(p.id, 0);
+  });
   holes.forEach((hole) => {
     const entries = players
       .map((p) => ({ id: p.id, score: scores[p.id]?.[hole.number] }))
       .filter((e): e is { id: string; score: number } => e.score != null);
     if (entries.length === 0) return;
     const min = Math.min(...entries.map((e) => e.score));
-    entries.forEach(({ id, score }) => {
-      if (score === min) holesWon.set(id, (holesWon.get(id) || 0) + 1);
-    });
+    const leaders = entries.filter((e) => e.score === min);
+    if (leaders.length === 1) {
+      holesWon.set(leaders[0].id, (holesWon.get(leaders[0].id) || 0) + 1);
+    } else {
+      leaders.forEach(({ id }) => holesTied.set(id, (holesTied.get(id) || 0) + 1));
+    }
   });
   const holesWonRanks = players
-    .map((p) => ({ player: p, count: holesWon.get(p.id) || 0 }))
-    .sort((a, b) => b.count - a.count);
+    .map((p) => ({
+      player: p,
+      won: holesWon.get(p.id) || 0,
+      tied: holesTied.get(p.id) || 0,
+    }))
+    .sort((a, b) => b.won - a.won || b.tied - a.tied);
 
   // Partnerships
   const partnerMap = new Map<string, { ids: [string, string]; points: number }>();
@@ -336,10 +347,18 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
         'HOLES WON (Low Gross)',
         <div>
           {holesWonRanks.map((r, i) =>
-            rankingRow(i, r.player.name, `${r.count} ${r.count === 1 ? 'hole' : 'holes'}`)
+            rankingRow(
+              i,
+              r.player.name,
+              <span>
+                <span style={{ color: colors.red }}>{r.won} won</span>
+                <span style={{ color: colors.muted, margin: '0 6px' }}>·</span>
+                <span style={{ color: colors.gold }}>{r.tied} tied</span>
+              </span>
+            )
           )}
           <div style={{ fontSize: 10, color: colors.muted, marginTop: 4 }}>
-            Ties counted as wins for all tied players.
+            Only sole low gross counts as a win; ties are tracked separately.
           </div>
         </div>
       )}

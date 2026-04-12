@@ -39,24 +39,35 @@ export default function Scoreboard({
     .map((p) => ({ player: p, money: getPlayerMoney(p.id) }))
     .sort((a, b) => b.money - a.money);
 
-  // Holes won: for each hole, players with the lowest gross score win it (ties = all win).
+  // Holes won: sole lowest gross on a hole. Holes tied: tied for the lowest with ≥1 other player.
   const holesWonMap = new Map<string, number>();
-  players.forEach((p) => holesWonMap.set(p.id, 0));
+  const holesTiedMap = new Map<string, number>();
+  players.forEach((p) => {
+    holesWonMap.set(p.id, 0);
+    holesTiedMap.set(p.id, 0);
+  });
   holes.forEach((hole) => {
     const entries = players
       .map((p) => ({ id: p.id, score: scores[p.id]?.[hole.number] }))
       .filter((e): e is { id: string; score: number } => e.score != null);
     if (entries.length === 0) return;
     const minScore = Math.min(...entries.map((e) => e.score));
-    entries.forEach(({ id, score }) => {
-      if (score === minScore) {
-        holesWonMap.set(id, (holesWonMap.get(id) || 0) + 1);
-      }
-    });
+    const leaders = entries.filter((e) => e.score === minScore);
+    if (leaders.length === 1) {
+      holesWonMap.set(leaders[0].id, (holesWonMap.get(leaders[0].id) || 0) + 1);
+    } else {
+      leaders.forEach(({ id }) => {
+        holesTiedMap.set(id, (holesTiedMap.get(id) || 0) + 1);
+      });
+    }
   });
   const holesWonRankings = players
-    .map((p) => ({ player: p, count: holesWonMap.get(p.id) || 0 }))
-    .sort((a, b) => b.count - a.count);
+    .map((p) => ({
+      player: p,
+      won: holesWonMap.get(p.id) || 0,
+      tied: holesTiedMap.get(p.id) || 0,
+    }))
+    .sort((a, b) => b.won - a.won || b.tied - a.tied);
 
   // Partnerships: combine each unique pair's points across all matches
   const partnershipMap = new Map<string, { ids: [string, string]; points: number }>();
@@ -133,7 +144,7 @@ export default function Scoreboard({
             Holes Won (Low Gross)
           </h3>
           <div className="space-y-1.5">
-            {holesWonRankings.map(({ player, count }, idx) => (
+            {holesWonRankings.map(({ player, won, tied }, idx) => (
               <div key={player.id} className="flex items-center justify-between bg-neutral-800/60 rounded-lg px-3 py-2">
                 <div className="flex items-center gap-2">
                   <span className={`text-sm font-bold w-5 text-center ${
@@ -143,13 +154,18 @@ export default function Scoreboard({
                   </span>
                   <span className="text-white text-sm font-medium">{player.name}</span>
                 </div>
-                <span className="font-bold text-red-400">
-                  {count} {count === 1 ? 'hole' : 'holes'}
-                </span>
+                <div className="flex items-center gap-3 text-sm font-bold">
+                  <span className="text-red-400">
+                    {won} <span className="text-[10px] text-neutral-400 font-normal">won</span>
+                  </span>
+                  <span className="text-yellow-400">
+                    {tied} <span className="text-[10px] text-neutral-400 font-normal">tied</span>
+                  </span>
+                </div>
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-neutral-500 mt-1">Ties counted as wins for all tied players.</p>
+          <p className="text-[10px] text-neutral-500 mt-1">Only sole low gross counts as a win; ties are tracked separately.</p>
         </div>
 
         {/* Partnership Rankings */}
