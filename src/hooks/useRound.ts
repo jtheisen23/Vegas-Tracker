@@ -8,10 +8,13 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
 
-const DEFAULT_HOLES: HoleSetup[] = Array.from({ length: 18 }, (_, i) => ({
+const GENEVA_PARS = [4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 3, 3, 4, 4, 4];
+const GENEVA_HDCPS = [1, 3, 9, 13, 17, 15, 5, 7, 11, 8, 2, 10, 14, 16, 18, 4, 6, 12];
+
+const DEFAULT_HOLES: HoleSetup[] = GENEVA_PARS.map((par, i) => ({
   number: i + 1,
-  par: 4,
-  handicapRating: i + 1,
+  par,
+  handicapRating: GENEVA_HDCPS[i],
 }));
 
 export function useRound() {
@@ -26,7 +29,7 @@ export function useRound() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scores, setScores] = useState<Record<string, Record<number, number>>>({});
   const [currentHole, setCurrentHole] = useState(1);
-  const [courseName, setCourseName] = useState('');
+  const [courseName, setCourseName] = useState('Geneva Golf Club');
   const [pointValue, setPointValue] = useState(0.5);
   // matchId -> holeNumber -> Multiplier
   const [multipliers, setMultipliers] = useState<Record<string, Record<number, Multiplier>>>({});
