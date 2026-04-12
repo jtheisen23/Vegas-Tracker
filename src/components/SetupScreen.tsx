@@ -57,8 +57,10 @@ export default function SetupScreen({
 
   return (
     <div className="min-h-screen bg-slate-900 p-4 pb-24">
-      <h1 className="text-2xl font-bold text-center text-emerald-400 mb-6">
+      <h1 className="text-2xl font-bold text-center text-emerald-400 mb-6 flex items-center justify-center gap-3">
+        <span className="text-3xl" role="img" aria-label="dice">🎲</span>
         Vegas Golf Tracker
+        <span className="text-3xl" role="img" aria-label="dice">🎲</span>
       </h1>
 
       {/* Step tabs */}
