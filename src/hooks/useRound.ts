@@ -278,6 +278,19 @@ export function useRound() {
 
     saveRound(savedRound);
     localStorage.removeItem(ACTIVE_ROUND_KEY);
+
+    // Reset state for the next round. Keep the course/holes/point value
+    // since those are usually reused, but blank out players, matches, and scores.
+    setPlayers([
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+    ]);
+    setMatches([]);
+    setScores({});
+    setMultipliers({});
+    setCurrentHole(1);
   }, [matches, getMatchTotal, players, courseName, holes, scores, pointValue]);
 
   return {
