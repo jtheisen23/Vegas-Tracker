@@ -287,31 +287,87 @@ export async function generatePDFBlob(element: HTMLElement): Promise<Blob> {
     import('jspdf'),
   ]);
 
+  const scale = 2;
   const canvas = await html2canvas(element, {
-    scale: 2,
+    scale,
     backgroundColor: '#ffffff',
     useCORS: true,
     logging: false,
   });
 
+  // Collect section break points (in canvas pixels, relative to top of element)
+  const elementRect = element.getBoundingClientRect();
+  const elementTop = elementRect.top;
+  const sectionBreaks: number[] = [];
+  element.querySelectorAll('[data-pdf-section]').forEach((sec) => {
+    const r = (sec as HTMLElement).getBoundingClientRect();
+    sectionBreaks.push((r.top - elementTop) * scale);
+  });
+  // Ensure first and last positions are included
+  sectionBreaks.push(0);
+  sectionBreaks.push(canvas.height);
+  sectionBreaks.sort((a, b) => a - b);
+  // Dedupe
+  const uniqueBreaks = sectionBreaks.filter(
+    (v, i, arr) => i === 0 || Math.abs(v - arr[i - 1]) > 1
+  );
+
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = pdf.internal.pageSize.getHeight();
-  const imgWidth = pdfWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  const marginSide = 8; // mm
+  const marginTopBottom = 10; // mm
+  const contentWidthMm = pdfWidth - 2 * marginSide;
+  const contentHeightMm = pdfHeight - 2 * marginTopBottom;
 
-  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+  // Convert canvas px → mm
+  const mmPerPx = contentWidthMm / canvas.width;
+  const pageContentHeightPx = contentHeightMm / mmPerPx;
+  // Minimum content per page to avoid awkward near-empty pages; used when
+  // deciding whether to break earlier than necessary at a section boundary.
+  const minContentPx = pageContentHeightPx * 0.3;
 
-  let heightLeft = imgHeight;
-  let position = 0;
-  pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-  heightLeft -= pdfHeight;
+  let currentY = 0;
+  let pageIndex = 0;
 
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
+  while (currentY < canvas.height) {
+    const maxPageEnd = currentY + pageContentHeightPx;
+    let pageEnd = Math.min(maxPageEnd, canvas.height);
+
+    // If there is content beyond this page, try to break at a section boundary
+    if (pageEnd < canvas.height) {
+      // Find the latest section break that falls within [currentY + minContent, maxPageEnd]
+      let bestBreak = -1;
+      for (const bp of uniqueBreaks) {
+        if (bp > currentY + minContentPx && bp <= maxPageEnd) {
+          bestBreak = bp;
+        }
+      }
+      if (bestBreak > 0) {
+        pageEnd = bestBreak;
+      }
+    }
+
+    const slicePx = pageEnd - currentY;
+
+    // Render the slice to a temporary canvas
+    const sliceCanvas = document.createElement('canvas');
+    sliceCanvas.width = canvas.width;
+    sliceCanvas.height = Math.ceil(slicePx);
+    const ctx = sliceCanvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get 2d context');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+    ctx.drawImage(canvas, 0, -currentY);
+    const dataUrl = sliceCanvas.toDataURL('image/jpeg', 0.92);
+
+    const sliceHeightMm = slicePx * mmPerPx;
+
+    if (pageIndex > 0) pdf.addPage();
+    pdf.addImage(dataUrl, 'JPEG', marginSide, marginTopBottom, contentWidthMm, sliceHeightMm);
+
+    currentY = pageEnd;
+    pageIndex += 1;
   }
 
   return pdf.output('blob');

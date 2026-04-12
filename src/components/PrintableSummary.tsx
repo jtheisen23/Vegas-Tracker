@@ -72,7 +72,7 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
   const fontStack = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
   const section = (title: string, children: React.ReactNode) => (
-    <div style={{ marginBottom: 18 }}>
+    <div style={{ marginBottom: 18 }} data-pdf-section>
       <div
         style={{
           fontSize: 13,
@@ -218,7 +218,7 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
   const renderNine = (label: string, nine: typeof holes, sumLabel: string) => {
     const parSum = nine.reduce((s, h) => s + h.par, 0);
     return (
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12 }} data-pdf-section>
         <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 12 }}>{label}</div>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
           <thead>
@@ -318,6 +318,7 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
       {/* Round MVP */}
       {mvp && mvp.holesPlayed > 0 && (
         <div
+          data-pdf-section
           style={{
             marginBottom: 18,
             padding: 12,
