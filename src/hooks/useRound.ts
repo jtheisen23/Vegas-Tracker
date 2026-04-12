@@ -121,6 +121,21 @@ export function useRound() {
     setPlayers((prev) => calculateStrokesReceived(prev, handicapMode));
   }, [handicapMode]);
 
+  // Clear players/matches/scores for a fresh game, keeping course + holes + point value.
+  const resetForNewGame = useCallback(() => {
+    setPlayers([
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+    ]);
+    setMatches([]);
+    setScores({});
+    setMultipliers({});
+    setCurrentHole(1);
+    setScreen('setup');
+  }, []);
+
   const startRound = useCallback(() => {
     const updated = calculateStrokesReceived(players, handicapMode);
     setPlayers(updated);
@@ -330,5 +345,6 @@ export function useRound() {
     handicapMode,
     setHandicapMode,
     recalculateStrokes,
+    resetForNewGame,
   };
 }

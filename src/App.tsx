@@ -95,6 +95,7 @@ function App() {
         handicapMode={round.handicapMode}
         onSetHandicapMode={round.setHandicapMode}
         onStart={round.startRound}
+        onNewGame={round.resetForNewGame}
       />
       <button
         onClick={() => round.setScreen('history')}

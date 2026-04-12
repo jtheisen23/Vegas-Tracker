@@ -20,6 +20,7 @@ interface Props {
   handicapMode: HandicapMode;
   onSetHandicapMode: (mode: HandicapMode) => void;
   onStart: () => void;
+  onNewGame: () => void;
 }
 
 type SetupStep = 'players' | 'course' | 'matches';
@@ -43,7 +44,14 @@ export default function SetupScreen({
   onSetHandicapMode,
   onAddMatch,
   onStart,
+  onNewGame,
 }: Props) {
+  const handleNewGame = () => {
+    const ok = window.confirm(
+      'Start a new game? This will clear all players, handicaps, and matches. The course setup will be kept.'
+    );
+    if (ok) onNewGame();
+  };
   const [step, setStep] = useState<SetupStep>('players');
   const [newMatchRotation, setNewMatchRotation] = useState(1);
   const [newMatchTeam1, setNewMatchTeam1] = useState<[string, string]>(['', '']);
@@ -105,6 +113,13 @@ export default function SetupScreen({
       {/* Players Step */}
       {step === 'players' && (
         <div className="space-y-4">
+          <button
+            onClick={handleNewGame}
+            className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 py-2.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2"
+          >
+            <span>🔄</span> Start New Game
+          </button>
+
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold text-neutral-200">Players</h2>
             {players.length < 5 && (
