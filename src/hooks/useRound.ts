@@ -121,6 +121,19 @@ export function useRound() {
     setPlayers((prev) => calculateStrokesReceived(prev, handicapMode));
   }, [handicapMode]);
 
+  // Load a previously-saved round back into active state so it can be edited.
+  const loadSavedRound = useCallback((saved: SavedRound) => {
+    setPlayers(saved.players);
+    setHoles(saved.holes);
+    setMatches(saved.matches);
+    setScores(saved.scores);
+    setCourseName(saved.courseName);
+    setPointValue(saved.pointsPerDollar);
+    setMultipliers(saved.multipliers || {});
+    setCurrentHole(1);
+    setScreen('scoreboard');
+  }, []);
+
   // Clear players/matches/scores for a fresh game, keeping course + holes + point value.
   const resetForNewGame = useCallback(() => {
     setPlayers([
@@ -289,6 +302,7 @@ export function useRound() {
       scores,
       pointsPerDollar: pointValue,
       results,
+      multipliers,
     };
 
     saveRound(savedRound);
@@ -346,5 +360,6 @@ export function useRound() {
     setHandicapMode,
     recalculateStrokes,
     resetForNewGame,
+    loadSavedRound,
   };
 }

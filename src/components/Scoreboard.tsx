@@ -394,7 +394,12 @@ export default function Scoreboard({
       </div>
 
       <button
-        onClick={onFinish}
+        onClick={() => {
+          const ok = window.confirm(
+            'Finish and save this round? The round will be moved to History and the scoring screen will reset for a new game.'
+          );
+          if (ok) onFinish();
+        }}
         className="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-semibold text-lg"
       >
         Finish & Save Round

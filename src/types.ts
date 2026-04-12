@@ -38,6 +38,7 @@ export interface Round {
 
 export interface SavedRound extends Round {
   results: MatchResult[];
+  multipliers?: Record<string, Record<number, Multiplier>>;
 }
 
 export interface MatchResult {

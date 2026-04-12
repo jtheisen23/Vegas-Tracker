@@ -5,9 +5,10 @@ import ShareMenu from './ShareMenu';
 
 interface Props {
   onBack: () => void;
+  onEditRound: (round: SavedRound) => void;
 }
 
-export default function RoundHistory({ onBack }: Props) {
+export default function RoundHistory({ onBack, onEditRound }: Props) {
   const [rounds, setRounds] = useState<SavedRound[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -16,8 +17,19 @@ export default function RoundHistory({ onBack }: Props) {
   }, []);
 
   const handleDelete = (id: string) => {
+    const ok = window.confirm('Delete this round? This cannot be undone.');
+    if (!ok) return;
     deleteRound(id);
     setRounds(loadRounds());
+  };
+
+  const handleEdit = (round: SavedRound) => {
+    const ok = window.confirm(
+      'Edit this round? It will be re-opened as the active round so you can make changes. When you finish & save, a new entry will be created and this one will be removed.'
+    );
+    if (!ok) return;
+    deleteRound(round.id);
+    onEditRound(round);
   };
 
   return (
@@ -101,12 +113,20 @@ export default function RoundHistory({ onBack }: Props) {
                     />
                   </div>
 
-                  <button
-                    onClick={() => handleDelete(round.id)}
-                    className="mt-3 text-red-400 text-xs"
-                  >
-                    Delete Round
-                  </button>
+                  <div className="mt-3 flex items-center gap-3">
+                    <button
+                      onClick={() => handleEdit(round)}
+                      className="bg-neutral-800 border border-neutral-700 text-neutral-200 px-3 py-1.5 rounded-lg text-xs font-semibold"
+                    >
+                      ✏️ Edit Round
+                    </button>
+                    <button
+                      onClick={() => handleDelete(round.id)}
+                      className="text-red-400 text-xs ml-auto"
+                    >
+                      Delete Round
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

@@ -9,7 +9,12 @@ function App() {
   const round = useRound();
 
   if (round.screen === 'history') {
-    return <RoundHistory onBack={() => round.setScreen('setup')} />;
+    return (
+      <RoundHistory
+        onBack={() => round.setScreen('setup')}
+        onEditRound={(saved) => round.loadSavedRound(saved)}
+      />
+    );
   }
 
   if (round.screen === 'scorecard') {
