@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Player, Match, HoleSetup, Round, Screen, SavedRound, MatchResult, Multiplier } from '../types';
 import { calculateStrokesReceived } from '../utils/handicap';
 import { calculateVegasPoints, getNetScore } from '../utils/scoring';
@@ -17,22 +17,42 @@ const DEFAULT_HOLES: HoleSetup[] = GENEVA_PARS.map((par, i) => ({
   handicapRating: GENEVA_HDCPS[i],
 }));
 
+const ACTIVE_ROUND_KEY = 'vegas-golf-active-round';
+
+function loadActiveRound() {
+  try {
+    const data = localStorage.getItem(ACTIVE_ROUND_KEY);
+    if (data) return JSON.parse(data);
+  } catch {}
+  return null;
+}
+
 export function useRound() {
-  const [screen, setScreen] = useState<Screen>('setup');
-  const [players, setPlayers] = useState<Player[]>([
-    { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
-    { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
-    { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
-    { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
-  ]);
-  const [holes, setHoles] = useState<HoleSetup[]>(DEFAULT_HOLES);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [scores, setScores] = useState<Record<string, Record<number, number>>>({});
-  const [currentHole, setCurrentHole] = useState(1);
-  const [courseName, setCourseName] = useState('Geneva Golf Club');
-  const [pointValue, setPointValue] = useState(0.5);
+  const saved = loadActiveRound();
+
+  const [screen, setScreen] = useState<Screen>(saved?.screen || 'setup');
+  const [players, setPlayers] = useState<Player[]>(
+    saved?.players || [
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+      { id: generateId(), name: '', handicap: 0, strokesReceived: 0 },
+    ]
+  );
+  const [holes, setHoles] = useState<HoleSetup[]>(saved?.holes || DEFAULT_HOLES);
+  const [matches, setMatches] = useState<Match[]>(saved?.matches || []);
+  const [scores, setScores] = useState<Record<string, Record<number, number>>>(saved?.scores || {});
+  const [currentHole, setCurrentHole] = useState(saved?.currentHole || 1);
+  const [courseName, setCourseName] = useState(saved?.courseName || 'Geneva Golf Club');
+  const [pointValue, setPointValue] = useState(saved?.pointValue || 0.5);
   // matchId -> holeNumber -> Multiplier
-  const [multipliers, setMultipliers] = useState<Record<string, Record<number, Multiplier>>>({});
+  const [multipliers, setMultipliers] = useState<Record<string, Record<number, Multiplier>>>(saved?.multipliers || {});
+
+  // Auto-save active round state to localStorage
+  useEffect(() => {
+    const state = { screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers };
+    localStorage.setItem(ACTIVE_ROUND_KEY, JSON.stringify(state));
+  }, [screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers]);
 
   const addPlayer = useCallback(() => {
     if (players.length >= 5) return;
@@ -246,6 +266,7 @@ export function useRound() {
     };
 
     saveRound(savedRound);
+    localStorage.removeItem(ACTIVE_ROUND_KEY);
   }, [matches, getMatchTotal, players, courseName, holes, scores, pointValue]);
 
   return {

@@ -57,11 +57,29 @@ export default function SetupScreen({
 
   return (
     <div className="min-h-screen bg-black p-4 pb-24">
-      <h1 className="text-2xl font-bold text-center text-red-500 mb-6 flex items-center justify-center gap-3">
-        <span className="text-3xl" role="img" aria-label="dice">🎲</span>
-        Vegas Golf Tracker
-        <span className="text-3xl" role="img" aria-label="dice">🎲</span>
-      </h1>
+      <div className="mb-6 flex flex-col items-center">
+        <div className="relative bg-red-600 rounded-2xl px-6 py-4 border-4 border-white shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white rounded-full w-6 h-6 flex items-center justify-center">
+            <span className="text-red-700 text-xs font-black">★</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🎲</span>
+            <div className="text-center">
+              <div className="text-yellow-300 text-[10px] font-bold tracking-widest uppercase">Welcome to</div>
+              <div className="text-white text-2xl font-black tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
+                VEGAS GOLF
+              </div>
+              <div className="text-yellow-300 text-[10px] font-bold tracking-widest uppercase">Tracker</div>
+            </div>
+            <span className="text-2xl">🎲</span>
+          </div>
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="w-1.5 h-1.5 rounded-full bg-white" />
+            ))}
+          </div>
+        </div>
+      </div>
 
       {/* Step tabs */}
       <div className="flex gap-1 mb-6 bg-neutral-900 rounded-lg p-1">
