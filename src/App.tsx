@@ -3,12 +3,25 @@ import SetupScreen from './components/SetupScreen';
 import HoleEntry from './components/HoleEntry';
 import Scoreboard from './components/Scoreboard';
 import RoundHistory from './components/RoundHistory';
+import Scorecard from './components/Scorecard';
 
 function App() {
   const round = useRound();
 
   if (round.screen === 'history') {
     return <RoundHistory onBack={() => round.setScreen('setup')} />;
+  }
+
+  if (round.screen === 'scorecard') {
+    return (
+      <Scorecard
+        players={round.players}
+        holes={round.holes}
+        scores={round.scores}
+        courseName={round.courseName}
+        onBack={() => round.setScreen('holes')}
+      />
+    );
   }
 
   if (round.screen === 'scoreboard') {
@@ -43,6 +56,7 @@ function App() {
         onSetScore={round.setScore}
         onClearScore={round.clearScore}
         onShowScoreboard={() => round.setScreen('scoreboard')}
+        onShowScorecard={() => round.setScreen('scorecard')}
         getMatchResultsForHole={round.getMatchResultsForHole}
         getActiveMatches={round.getActiveMatches}
         getCurrentRotation={round.getCurrentRotation}

@@ -13,6 +13,7 @@ interface Props {
   onSetScore: (playerId: string, holeNumber: number, grossScore: number) => void;
   onClearScore: (playerId: string, holeNumber: number) => void;
   onShowScoreboard: () => void;
+  onShowScorecard: () => void;
   getMatchResultsForHole: (match: Match, holeNumber: number) => { team1Vegas: number; team2Vegas: number; points: number } | null;
   getActiveMatches: () => Match[];
   getCurrentRotation: () => number;
@@ -34,6 +35,7 @@ export default function HoleEntry({
   onSetScore,
   onClearScore,
   onShowScoreboard,
+  onShowScorecard,
   getMatchResultsForHole,
   getActiveMatches,
   getCurrentRotation,
@@ -164,12 +166,20 @@ export default function HoleEntry({
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={onShowScoreboard}
-          className="text-red-500 text-sm font-medium"
-        >
-          Scoreboard
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onShowScoreboard}
+            className="text-red-500 text-sm font-medium"
+          >
+            Scoreboard
+          </button>
+          <button
+            onClick={onShowScorecard}
+            className="text-red-500 text-sm font-medium"
+          >
+            Card
+          </button>
+        </div>
         <h1 className="text-xl font-bold text-red-500">Hole {currentHole}</h1>
         <div className="flex items-center gap-3">
           <button

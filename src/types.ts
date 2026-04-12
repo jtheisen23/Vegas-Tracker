@@ -48,7 +48,7 @@ export interface MatchResult {
   money: number;
 }
 
-export type Screen = 'setup' | 'holes' | 'scoreboard' | 'history';
+export type Screen = 'setup' | 'holes' | 'scoreboard' | 'history' | 'scorecard';
 
 export type Multiplier = 'none' | 'press' | 'roll' | 're-roll';
 
