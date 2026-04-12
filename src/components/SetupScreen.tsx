@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Player, Match, HoleSetup } from '../types';
+import { Player, Match, HoleSetup, HandicapMode } from '../types';
 
 interface Props {
   players: Player[];
@@ -17,6 +17,8 @@ interface Props {
   onSetMatches: (matches: Match[]) => void;
   onSetCourseName: (name: string) => void;
   onSetPointValue: (value: number) => void;
+  handicapMode: HandicapMode;
+  onSetHandicapMode: (mode: HandicapMode) => void;
   onStart: () => void;
 }
 
@@ -37,6 +39,8 @@ export default function SetupScreen({
   onSetMatches,
   onSetCourseName,
   onSetPointValue,
+  handicapMode,
+  onSetHandicapMode,
   onAddMatch,
   onStart,
 }: Props) {
@@ -163,6 +167,37 @@ export default function SetupScreen({
               min="0"
               className="w-32 bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
             />
+          </div>
+
+          <div className="mt-4">
+            <label className="text-xs text-neutral-400 mb-2 block">Handicap Mode</label>
+            <div className="flex gap-1 bg-neutral-800 rounded-lg p-1">
+              <button
+                onClick={() => onSetHandicapMode('off-the-low')}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  handicapMode === 'off-the-low'
+                    ? 'bg-red-600 text-white'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                Off the Low
+              </button>
+              <button
+                onClick={() => onSetHandicapMode('full')}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  handicapMode === 'full'
+                    ? 'bg-red-600 text-white'
+                    : 'text-neutral-400 hover:text-neutral-200'
+                }`}
+              >
+                Full Handicap
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500 mt-1">
+              {handicapMode === 'off-the-low'
+                ? 'Strokes calculated relative to the lowest handicap'
+                : 'Each player receives their full handicap strokes'}
+            </p>
           </div>
 
           <button

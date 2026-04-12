@@ -1,4 +1,5 @@
-import { Player, Match, HoleSetup, Multiplier } from '../types';
+import { useState } from 'react';
+import { Player, Match, HoleSetup, Multiplier, HandicapMode } from '../types';
 import { getNetScore } from '../utils/scoring';
 import { getStrokesOnHole } from '../utils/handicap';
 
@@ -18,6 +19,10 @@ interface Props {
   getMultiplier: (matchId: string, holeNumber: number) => Multiplier;
   getMultiplierValue: (m: Multiplier) => number;
   onSetMultiplier: (matchId: string, holeNumber: number, value: Multiplier) => void;
+  onUpdatePlayer: (id: string, field: keyof Player, value: string | number) => void;
+  handicapMode: HandicapMode;
+  onSetHandicapMode: (mode: HandicapMode) => void;
+  onRecalculateStrokes: () => void;
 }
 
 export default function HoleEntry({
@@ -36,7 +41,12 @@ export default function HoleEntry({
   getMultiplier,
   getMultiplierValue,
   onSetMultiplier,
+  onUpdatePlayer,
+  handicapMode,
+  onSetHandicapMode,
+  onRecalculateStrokes,
 }: Props) {
+  const [showEditPlayers, setShowEditPlayers] = useState(false);
   const hole = holes.find((h) => h.number === currentHole)!;
   const activeMatches = getActiveMatches();
   const rotation = getCurrentRotation();
@@ -63,6 +73,95 @@ export default function HoleEntry({
 
   return (
     <div className="min-h-screen bg-black p-4 pb-24">
+      {/* Edit Players Modal */}
+      {showEditPlayers && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center">
+          <div className="bg-neutral-900 w-full max-w-lg rounded-t-2xl p-4 pb-8 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Edit Players</h2>
+              <button
+                onClick={() => {
+                  onRecalculateStrokes();
+                  setShowEditPlayers(false);
+                }}
+                className="text-red-500 font-semibold text-sm"
+              >
+                Done
+              </button>
+            </div>
+
+            {players.map((player, idx) => (
+              <div key={player.id} className="bg-neutral-800 rounded-xl p-3 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-red-500 font-bold">#{idx + 1}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-neutral-400 mb-1 block">Name</label>
+                    <input
+                      type="text"
+                      value={player.name}
+                      onChange={(e) => onUpdatePlayer(player.id, 'name', e.target.value)}
+                      className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm border border-neutral-600 focus:border-red-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-neutral-400 mb-1 block">Handicap</label>
+                    <input
+                      type="number"
+                      value={player.handicap || ''}
+                      onChange={(e) =>
+                        onUpdatePlayer(player.id, 'handicap', parseInt(e.target.value) || 0)
+                      }
+                      placeholder="0"
+                      className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm border border-neutral-600 focus:border-red-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="text-xs text-neutral-500 mt-2">
+                  Strokes received: {player.strokesReceived}
+                </div>
+              </div>
+            ))}
+
+            <div className="mt-4">
+              <label className="text-xs text-neutral-400 mb-2 block">Handicap Mode</label>
+              <div className="flex gap-1 bg-neutral-800 rounded-lg p-1">
+                <button
+                  onClick={() => {
+                    onSetHandicapMode('off-the-low');
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                    handicapMode === 'off-the-low'
+                      ? 'bg-red-600 text-white'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  Off the Low
+                </button>
+                <button
+                  onClick={() => {
+                    onSetHandicapMode('full');
+                  }}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                    handicapMode === 'full'
+                      ? 'bg-red-600 text-white'
+                      : 'text-neutral-400 hover:text-neutral-200'
+                  }`}
+                >
+                  Full Handicap
+                </button>
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">
+                {handicapMode === 'off-the-low'
+                  ? 'Strokes calculated relative to the lowest handicap'
+                  : 'Each player receives their full handicap strokes'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -72,8 +171,16 @@ export default function HoleEntry({
           Scoreboard
         </button>
         <h1 className="text-xl font-bold text-red-500">Hole {currentHole}</h1>
-        <div className="text-sm text-neutral-400">
-          Par {hole.par} | R{rotation}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowEditPlayers(true)}
+            className="text-yellow-400 text-sm font-medium"
+          >
+            Edit
+          </button>
+          <div className="text-sm text-neutral-400">
+            Par {hole.par} | R{rotation}
+          </div>
         </div>
       </div>
 

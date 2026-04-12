@@ -1,10 +1,17 @@
-import { Player } from '../types';
+import { Player, HandicapMode } from '../types';
 
 /**
- * Calculate strokes received for each player off the lowest handicap.
- * Returns a new array of players with strokesReceived set.
+ * Calculate strokes received for each player.
+ * 'off-the-low': strokes = handicap - lowest handicap in group
+ * 'full': strokes = full handicap value
  */
-export function calculateStrokesReceived(players: Player[]): Player[] {
+export function calculateStrokesReceived(players: Player[], mode: HandicapMode = 'off-the-low'): Player[] {
+  if (mode === 'full') {
+    return players.map((p) => ({
+      ...p,
+      strokesReceived: p.handicap,
+    }));
+  }
   const minHandicap = Math.min(...players.map((p) => p.handicap));
   return players.map((p) => ({
     ...p,

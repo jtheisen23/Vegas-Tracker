@@ -49,6 +49,10 @@ function App() {
         getMultiplier={round.getMultiplier}
         getMultiplierValue={round.getMultiplierValue}
         onSetMultiplier={round.setMatchMultiplier}
+        onUpdatePlayer={round.updatePlayer}
+        handicapMode={round.handicapMode}
+        onSetHandicapMode={round.setHandicapMode}
+        onRecalculateStrokes={round.recalculateStrokes}
       />
     );
   }
@@ -71,6 +75,8 @@ function App() {
         onSetMatches={round.setMatches}
         onSetCourseName={round.setCourseName}
         onSetPointValue={round.setPointValue}
+        handicapMode={round.handicapMode}
+        onSetHandicapMode={round.setHandicapMode}
         onStart={round.startRound}
       />
       <button

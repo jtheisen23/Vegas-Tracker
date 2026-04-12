@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Player, Match, HoleSetup, Round, Screen, SavedRound, MatchResult, Multiplier } from '../types';
+import { Player, Match, HoleSetup, Round, Screen, SavedRound, MatchResult, Multiplier, HandicapMode } from '../types';
 import { calculateStrokesReceived } from '../utils/handicap';
 import { calculateVegasPoints, getNetScore } from '../utils/scoring';
 import { saveRound } from '../utils/storage';
@@ -45,14 +45,15 @@ export function useRound() {
   const [currentHole, setCurrentHole] = useState(saved?.currentHole || 1);
   const [courseName, setCourseName] = useState(saved?.courseName || 'Geneva Golf Club');
   const [pointValue, setPointValue] = useState(saved?.pointValue || 0.5);
+  const [handicapMode, setHandicapMode] = useState<HandicapMode>(saved?.handicapMode || 'off-the-low');
   // matchId -> holeNumber -> Multiplier
   const [multipliers, setMultipliers] = useState<Record<string, Record<number, Multiplier>>>(saved?.multipliers || {});
 
   // Auto-save active round state to localStorage
   useEffect(() => {
-    const state = { screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers };
+    const state = { screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers, handicapMode };
     localStorage.setItem(ACTIVE_ROUND_KEY, JSON.stringify(state));
-  }, [screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers]);
+  }, [screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers, handicapMode]);
 
   const addPlayer = useCallback(() => {
     if (players.length >= 5) return;
@@ -116,8 +117,12 @@ export function useRound() {
     setMatches((prev) => prev.filter((m) => m.id !== matchId));
   }, []);
 
+  const recalculateStrokes = useCallback(() => {
+    setPlayers((prev) => calculateStrokesReceived(prev, handicapMode));
+  }, [handicapMode]);
+
   const startRound = useCallback(() => {
-    const updated = calculateStrokesReceived(players);
+    const updated = calculateStrokesReceived(players, handicapMode);
     setPlayers(updated);
     // Initialize empty scores
     const initialScores: Record<string, Record<number, number>> = {};
@@ -127,7 +132,7 @@ export function useRound() {
     setScores(initialScores);
     setCurrentHole(1);
     setScreen('holes');
-  }, [players]);
+  }, [players, handicapMode]);
 
   const setScore = useCallback((playerId: string, holeNumber: number, grossScore: number) => {
     setScores((prev) => ({
@@ -309,5 +314,8 @@ export function useRound() {
     getMultiplier,
     getMultiplierValue,
     setMatchMultiplier,
+    handicapMode,
+    setHandicapMode,
+    recalculateStrokes,
   };
 }
