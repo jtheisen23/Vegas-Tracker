@@ -3,17 +3,20 @@
  *
  * Rules:
  * - Each team's two net scores form a two-digit number (lower digit first → e.g. 4,5 = 45)
- * - If a team has a birdie (net score <= par-1), the OPPONENT's number is flipped
+ * - If a team has a NATURAL birdie (gross score <= par-1), the OPPONENT's number is flipped
  *   (higher digit first → e.g. 5,4 = 54)
  * - Points = opponent's number - your number (positive = you win)
  */
 export function calculateVegasPoints(
   team1Scores: [number, number],
   team2Scores: [number, number],
-  par: number
+  par: number,
+  team1Gross: [number, number],
+  team2Gross: [number, number]
 ): { team1Vegas: number; team2Vegas: number; points: number } {
-  const team1HasBirdie = team1Scores[0] <= par - 1 || team1Scores[1] <= par - 1;
-  const team2HasBirdie = team2Scores[0] <= par - 1 || team2Scores[1] <= par - 1;
+  // Only natural (gross) birdies flip the opponent's score
+  const team1HasBirdie = team1Gross[0] <= par - 1 || team1Gross[1] <= par - 1;
+  const team2HasBirdie = team2Gross[0] <= par - 1 || team2Gross[1] <= par - 1;
 
   const sorted1 = [...team1Scores].sort((a, b) => a - b) as [number, number];
   const sorted2 = [...team2Scores].sort((a, b) => a - b) as [number, number];

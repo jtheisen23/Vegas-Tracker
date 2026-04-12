@@ -201,7 +201,7 @@ export function useRound() {
       const n3 = getNetScore(g3, p3.strokesReceived, hole.handicapRating);
       const n4 = getNetScore(g4, p4.strokesReceived, hole.handicapRating);
 
-      return calculateVegasPoints([n1, n2], [n3, n4], hole.par);
+      return calculateVegasPoints([n1, n2], [n3, n4], hole.par, [g1, g2], [g3, g4]);
     },
     [holes, players, scores]
   );
