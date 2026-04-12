@@ -91,11 +91,17 @@ export function useRound() {
     ];
 
     // If 5th player, add extra matches
+    // The anchor team (team1) plays against a second opponent team
+    // that includes the 5th player. No player can be with AND against
+    // the same person in the same rotation.
     if (players.length === 5) {
       newMatches.push(
-        { id: generateId(), team1: [p[0].id, p[4].id], team2: [p[2].id, p[3].id], rotation: 1 },
-        { id: generateId(), team1: [p[1].id, p[4].id], team2: [p[0].id, p[3].id], rotation: 2 },
-        { id: generateId(), team1: [p[2].id, p[4].id], team2: [p[0].id, p[1].id], rotation: 3 },
+        // R1: 1+2 already vs 3+4, now 1+2 also vs 5+3 (5 replaces 4)
+        { id: generateId(), team1: [p[0].id, p[1].id], team2: [p[4].id, p[2].id], rotation: 1 },
+        // R2: 1+3 already vs 2+4, now 1+3 also vs 5+4 (5 replaces 2)
+        { id: generateId(), team1: [p[0].id, p[2].id], team2: [p[4].id, p[3].id], rotation: 2 },
+        // R3: 1+4 already vs 2+3, now 1+4 also vs 5+2 (5 replaces 3)
+        { id: generateId(), team1: [p[0].id, p[3].id], team2: [p[4].id, p[1].id], rotation: 3 },
       );
     }
 
