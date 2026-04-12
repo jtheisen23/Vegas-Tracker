@@ -344,7 +344,17 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
             </div>
             <div style={{ fontSize: 18, fontWeight: 800 }}>{mvp.name}</div>
             <div style={{ fontSize: 11, color: colors.muted }}>
-              {mvp.holesWon} won · {mvp.holesTied} tied ·{' '}
+              {mvp.holesWon} won · {mvp.holesTied} tied
+              {(mvp.birdies > 0 || mvp.eagles > 0) && (
+                <>
+                  {' · '}
+                  <span style={{ color: colors.red, fontWeight: 600 }}>
+                    {mvp.birdies} birdie{mvp.birdies === 1 ? '' : 's'}
+                    {mvp.eagles > 0 && `, ${mvp.eagles} eagle${mvp.eagles === 1 ? '' : 's'}`}
+                  </span>
+                </>
+              )}
+              {' · '}
               <span style={{ color: mvp.differential >= 0 ? colors.red : colors.orange, fontWeight: 600 }}>
                 {formatDifferential(mvp.differential)} vs handicap
               </span>
@@ -469,6 +479,12 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 10, color: colors.muted }}>
                     Hcp {player.handicap} · Shot {scoreStr}
+                    {(perf.birdies > 0 || perf.eagles > 0) && (
+                      <span style={{ color: colors.red, marginLeft: 6, fontWeight: 600 }}>
+                        {perf.eagles > 0 && `${perf.eagles}E `}
+                        {perf.birdies > 0 && `${perf.birdies}B`}
+                      </span>
+                    )}
                   </div>
                   <div
                     style={{
@@ -483,7 +499,7 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
             );
           })}
           <div style={{ fontSize: 9, color: colors.muted, marginTop: 4 }}>
-            Grade combines score vs handicap with holes won/tied. A ≥ +4, B ≥ +2, C ±1, D -2 to -4, F ≤ -5.
+            Grade combines score vs handicap with holes won/tied and natural birdies/eagles. A ≥ +4, B ≥ +2, C ±1, D -2 to -4, F ≤ -5.
           </div>
         </div>
       )}

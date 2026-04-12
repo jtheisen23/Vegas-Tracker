@@ -11,16 +11,20 @@ export interface PlayerPerformance {
   scoreToPar: number;
   expectedOverPar: number; // handicap scaled by holes played
   differential: number; // expectedOverPar - scoreToPar (positive = beat handicap)
-  adjustedDifferential: number; // differential + bonuses from holes won/tied
+  adjustedDifferential: number; // differential + bonuses from wins/birdies
   grade: Grade;
   holesWon: number;
   holesTied: number;
+  birdies: number; // natural birdies (gross = par - 1)
+  eagles: number; // natural eagles or better (gross <= par - 2)
   mvpScore: number;
 }
 
-// Bonus applied per sole hole won and per tied hole toward the grade calculation.
+// Bonuses toward the grade calculation.
 const HOLE_WON_BONUS = 0.5;
 const HOLE_TIED_BONUS = 0.25;
+const BIRDIE_BONUS = 0.75; // natural birdie - biggest money mover in Vegas
+const EAGLE_BONUS = 1.5; // natural eagle or better
 
 // Grade bands (applied to the rounded adjusted differential).
 // A: beat expectation by 4+
@@ -84,12 +88,17 @@ export function computePerformances(
     let gross = 0;
     let parPlayed = 0;
     let holesPlayed = 0;
+    let birdies = 0;
+    let eagles = 0;
     holes.forEach((h) => {
       const g = scores[p.id]?.[h.number];
       if (g != null) {
         gross += g;
         parPlayed += h.par;
         holesPlayed += 1;
+        const diff = g - h.par;
+        if (diff <= -2) eagles += 1;
+        else if (diff === -1) birdies += 1;
       }
     });
     const scoreToPar = gross - parPlayed;
@@ -97,10 +106,17 @@ export function computePerformances(
     const differential = expectedOverPar - scoreToPar;
     const won = holesWon.get(p.id) || 0;
     const tied = holesTied.get(p.id) || 0;
-    const adjustedDifferential = differential + won * HOLE_WON_BONUS + tied * HOLE_TIED_BONUS;
+    const adjustedDifferential =
+      differential +
+      won * HOLE_WON_BONUS +
+      tied * HOLE_TIED_BONUS +
+      birdies * BIRDIE_BONUS +
+      eagles * EAGLE_BONUS;
     const grade: Grade = holesPlayed === 0 ? 'F' : getGrade(adjustedDifferential);
-    // MVP scoring: sole wins valued highly, ties worth less, performance adds/subtracts
-    const mvpScore = won * 3 + tied * 1 + differential * 2;
+    // MVP scoring: sole wins valued highly, ties worth less, performance adds/subtracts,
+    // natural birdies/eagles are big money movers in Vegas.
+    const mvpScore =
+      won * 3 + tied * 1 + differential * 2 + birdies * 3 + eagles * 6;
 
     return {
       playerId: p.id,
@@ -115,6 +131,8 @@ export function computePerformances(
       grade,
       holesWon: won,
       holesTied: tied,
+      birdies,
+      eagles,
       mvpScore,
     };
   });

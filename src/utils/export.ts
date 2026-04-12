@@ -64,8 +64,12 @@ export function formatRoundSummary(data: RoundExportData): string {
   if (mvp && mvp.holesPlayed > 0) {
     L.push('ROUND MVP');
     L.push('-'.repeat(30));
+    const extras: string[] = [];
+    if (mvp.eagles > 0) extras.push(`${mvp.eagles} eagle${mvp.eagles === 1 ? '' : 's'}`);
+    if (mvp.birdies > 0) extras.push(`${mvp.birdies} birdie${mvp.birdies === 1 ? '' : 's'}`);
+    const extrasStr = extras.length ? ` / ${extras.join(', ')}` : '';
     L.push(
-      `${mvp.name}  (Grade ${mvp.grade})  ${mvp.holesWon} won / ${mvp.holesTied} tied / ${formatDifferential(
+      `${mvp.name}  (Grade ${mvp.grade})  ${mvp.holesWon} won / ${mvp.holesTied} tied${extrasStr} / ${formatDifferential(
         mvp.differential
       )} vs hcp`
     );
@@ -126,7 +130,7 @@ export function formatRoundSummary(data: RoundExportData): string {
     `${padRight('', 3)}${padRight('Player', nameWidth)} ${padLeft('Grd', 4)} ${padLeft(
       'Hcp',
       4
-    )} ${padLeft('+/-', 5)} ${padLeft('vs Hcp', 7)}`
+    )} ${padLeft('+/-', 5)} ${padLeft('Eag', 4)} ${padLeft('Bir', 4)} ${padLeft('vs Hcp', 7)}`
   );
   gradeRanks.forEach((perf, i) => {
     const player = players.find((p) => p.id === perf.playerId)!;
@@ -142,10 +146,13 @@ export function formatRoundSummary(data: RoundExportData): string {
       `${i + 1}. ${padRight(perf.name, nameWidth)} ${padLeft(perf.grade, 4)} ${padLeft(
         player.handicap,
         4
-      )} ${padLeft(scoreStr, 5)} ${padLeft(formatDifferential(perf.differential), 7)}`
+      )} ${padLeft(scoreStr, 5)} ${padLeft(perf.eagles, 4)} ${padLeft(perf.birdies, 4)} ${padLeft(
+        formatDifferential(perf.differential),
+        7
+      )}`
     );
   });
-  L.push('Grade combines score vs handicap with holes won/tied.');
+  L.push('Grade combines score vs handicap, holes won/tied, and natural birdies/eagles.');
   L.push('A>=+4, B>=+2, C within +/-1, D -2 to -4, F <=-5.');
   L.push('');
 

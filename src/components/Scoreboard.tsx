@@ -114,7 +114,17 @@ export default function Scoreboard({
                 </div>
                 <div className="text-white text-lg font-bold">{mvp.name}</div>
                 <div className="text-[11px] text-neutral-300">
-                  {mvp.holesWon} won · {mvp.holesTied} tied ·{' '}
+                  {mvp.holesWon} won · {mvp.holesTied} tied
+                  {(mvp.birdies > 0 || mvp.eagles > 0) && (
+                    <>
+                      {' · '}
+                      <span className="text-red-400">
+                        {mvp.birdies} birdie{mvp.birdies === 1 ? '' : 's'}
+                        {mvp.eagles > 0 && `, ${mvp.eagles} eagle${mvp.eagles === 1 ? '' : 's'}`}
+                      </span>
+                    </>
+                  )}
+                  {' · '}
                   <span className={mvp.differential >= 0 ? 'text-green-400' : 'text-orange-400'}>
                     {formatDifferential(mvp.differential)} vs handicap
                   </span>
@@ -249,6 +259,12 @@ export default function Scoreboard({
                         ? `+${perf.scoreToPar}`
                         : perf.scoreToPar
                       : '-'}
+                    {(perf.birdies > 0 || perf.eagles > 0) && (
+                      <span className="text-red-400 ml-1">
+                        · {perf.eagles > 0 && `${perf.eagles}E `}
+                        {perf.birdies > 0 && `${perf.birdies}B`}
+                      </span>
+                    )}
                   </div>
                   <div
                     className={`text-sm font-bold ${
@@ -262,7 +278,7 @@ export default function Scoreboard({
             ))}
           </div>
           <p className="text-[10px] text-neutral-500 mt-1">
-            Grade combines score vs handicap with holes won/tied. A ≥ +4, B ≥ +2, C ±1, D -2 to -4, F ≤ -5.
+            Grade combines score vs handicap with holes won/tied and natural birdies/eagles. A ≥ +4, B ≥ +2, C ±1, D -2 to -4, F ≤ -5.
           </p>
         </div>
       </div>
