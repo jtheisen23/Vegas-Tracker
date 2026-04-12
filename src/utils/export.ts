@@ -379,19 +379,23 @@ export async function sharePDF(
   title: string
 ): Promise<'shared' | 'downloaded'> {
   const file = new File([blob], filename, { type: 'application/pdf' });
+  const nav = navigator as any;
 
-  // Try native share with file
-  if (
-    typeof navigator !== 'undefined' &&
-    'share' in navigator &&
-    'canShare' in navigator &&
-    (navigator as any).canShare({ files: [file] })
-  ) {
-    try {
-      await (navigator as any).share({ files: [file], title });
-      return 'shared';
-    } catch {
-      // user cancelled — fall through to download
+  // Try native share with the file. Some browsers ship `share` but not
+  // `canShare`, or `canShare` returns false even when sharing would work —
+  // so we call share() if it exists and fall back only on hard failure.
+  if (typeof nav.share === 'function') {
+    const canShareFiles =
+      typeof nav.canShare !== 'function' || nav.canShare({ files: [file] });
+    if (canShareFiles) {
+      try {
+        await nav.share({ files: [file], title, text: title });
+        return 'shared';
+      } catch (err: any) {
+        // User cancelled — treat as shared (don't trigger a download too).
+        if (err?.name === 'AbortError') return 'shared';
+        console.error('Web Share API failed, falling back to download:', err);
+      }
     }
   }
 

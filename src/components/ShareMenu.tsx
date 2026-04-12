@@ -10,6 +10,11 @@ import {
 } from '../utils/export';
 import PrintableSummary from './PrintableSummary';
 
+const hasWebShareFiles = (): boolean => {
+  const nav = navigator as any;
+  return typeof nav.share === 'function';
+};
+
 interface Props {
   data: RoundExportData;
   label?: string;
@@ -30,28 +35,59 @@ export default function ShareMenu({ data, label = 'Share Round Summary' }: Props
     setTimeout(() => setStatus(null), 3000);
   };
 
-  // Primary share: generate PDF and share via native share sheet (or download as fallback)
-  const handleShare = async () => {
-    if (!printableRef.current) return;
+  // Shared PDF flow: generate PDF then open the native share sheet.
+  const doPDFShare = async (): Promise<'shared' | 'downloaded' | 'failed'> => {
+    if (!printableRef.current) return 'failed';
     setGeneratingPDF(true);
-    showStatus('Generating PDF…');
     try {
       const blob = await generatePDFBlob(printableRef.current);
-      const result = await sharePDF(blob, pdfFilename, subject);
-      showStatus(result === 'shared' ? 'Shared!' : 'Downloaded PDF');
+      return await sharePDF(blob, pdfFilename, subject);
     } catch (err) {
       console.error(err);
-      showStatus('PDF generation failed');
+      return 'failed';
     } finally {
       setGeneratingPDF(false);
     }
   };
 
-  const handleEmail = () => emailSummary(getText(), subject);
-  const handleText = () => textSummary(getText());
+  const handleShare = async () => {
+    showStatus('Generating PDF…');
+    const res = await doPDFShare();
+    if (res === 'shared') showStatus('Shared!');
+    else if (res === 'downloaded') showStatus('Downloaded PDF');
+    else showStatus('Share failed');
+  };
+
+  // Email / Text: prefer PDF via share sheet (so user can pick Mail or Messages).
+  // If Web Share API is unavailable (e.g. desktop), fall back to mailto:/sms:
+  // with plain text — since those URI schemes can't carry attachments.
+  const handleEmail = async () => {
+    if (hasWebShareFiles()) {
+      showStatus('Generating PDF…');
+      const res = await doPDFShare();
+      if (res === 'shared') showStatus('Shared!');
+      else if (res === 'downloaded') showStatus('Downloaded PDF');
+      else emailSummary(getText(), subject);
+    } else {
+      emailSummary(getText(), subject);
+    }
+  };
+
+  const handleText = async () => {
+    if (hasWebShareFiles()) {
+      showStatus('Generating PDF…');
+      const res = await doPDFShare();
+      if (res === 'shared') showStatus('Shared!');
+      else if (res === 'downloaded') showStatus('Downloaded PDF');
+      else textSummary(getText());
+    } else {
+      textSummary(getText());
+    }
+  };
+
   const handleCopy = async () => {
     const ok = await copySummary(getText());
-    showStatus(ok ? 'Copied to clipboard' : 'Copy failed');
+    showStatus(ok ? 'Copied text to clipboard' : 'Copy failed');
   };
 
   return (
@@ -91,7 +127,7 @@ export default function ShareMenu({ data, label = 'Share Round Summary' }: Props
         </button>
       </div>
       <div className="text-[10px] text-neutral-500 mt-2 text-center">
-        Share sends a PDF · Email/Text/Copy use plain text
+        PDF goes through your device's share sheet — pick Mail, Messages, or any app.
       </div>
       {status && <div className="mt-2 text-xs text-yellow-400 text-center">{status}</div>}
 
