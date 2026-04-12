@@ -2,7 +2,6 @@ import { useRef, useState } from 'react';
 import {
   RoundExportData,
   formatRoundSummary,
-  shareSummary,
   emailSummary,
   textSummary,
   copySummary,
@@ -31,14 +30,20 @@ export default function ShareMenu({ data, label = 'Share Round Summary' }: Props
     setTimeout(() => setStatus(null), 3000);
   };
 
+  // Primary share: generate PDF and share via native share sheet (or download as fallback)
   const handleShare = async () => {
-    const res = await shareSummary(getText(), subject);
-    if (res === 'shared') {
-      /* native share completed */
-    } else if (res === 'copied') {
-      showStatus('Copied to clipboard');
-    } else {
-      showStatus('Share not supported - use Copy');
+    if (!printableRef.current) return;
+    setGeneratingPDF(true);
+    showStatus('Generating PDF…');
+    try {
+      const blob = await generatePDFBlob(printableRef.current);
+      const result = await sharePDF(blob, pdfFilename, subject);
+      showStatus(result === 'shared' ? 'Shared!' : 'Downloaded PDF');
+    } catch (err) {
+      console.error(err);
+      showStatus('PDF generation failed');
+    } finally {
+      setGeneratingPDF(false);
     }
   };
 
@@ -49,42 +54,19 @@ export default function ShareMenu({ data, label = 'Share Round Summary' }: Props
     showStatus(ok ? 'Copied to clipboard' : 'Copy failed');
   };
 
-  const handlePDF = async () => {
-    if (!printableRef.current) return;
-    setGeneratingPDF(true);
-    showStatus('Generating PDF…');
-    try {
-      const blob = await generatePDFBlob(printableRef.current);
-      const result = await sharePDF(blob, pdfFilename, subject);
-      showStatus(result === 'shared' ? 'Shared!' : 'Downloaded');
-    } catch (err) {
-      console.error(err);
-      showStatus('PDF generation failed');
-    } finally {
-      setGeneratingPDF(false);
-    }
-  };
-
   return (
     <div className="bg-neutral-900 rounded-xl p-3">
       <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
         {label}
       </div>
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <button
           onClick={handleShare}
-          className="bg-red-600 text-white rounded-lg py-2 text-xs font-semibold flex flex-col items-center gap-0.5"
+          disabled={generatingPDF}
+          className="bg-red-600 disabled:bg-neutral-700 text-white rounded-lg py-2 text-xs font-semibold flex flex-col items-center gap-0.5"
         >
           <span className="text-base">📤</span>
-          Share
-        </button>
-        <button
-          onClick={handlePDF}
-          disabled={generatingPDF}
-          className="bg-yellow-600 disabled:bg-neutral-700 text-white rounded-lg py-2 text-xs font-semibold flex flex-col items-center gap-0.5"
-        >
-          <span className="text-base">📄</span>
-          PDF
+          Share PDF
         </button>
         <button
           onClick={handleEmail}
@@ -107,6 +89,9 @@ export default function ShareMenu({ data, label = 'Share Round Summary' }: Props
           <span className="text-base">📋</span>
           Copy
         </button>
+      </div>
+      <div className="text-[10px] text-neutral-500 mt-2 text-center">
+        Share sends a PDF · Email/Text/Copy use plain text
       </div>
       {status && <div className="mt-2 text-xs text-yellow-400 text-center">{status}</div>}
 
