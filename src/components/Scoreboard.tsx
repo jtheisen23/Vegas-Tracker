@@ -262,7 +262,7 @@ export default function Scoreboard({
             ))}
           </div>
           <p className="text-[10px] text-neutral-500 mt-1">
-            Grade based on score vs handicap. A ≥ +3, B ≥ 0, C ≥ -3, D ≥ -6, F &lt; -6.
+            Grade combines score vs handicap with holes won/tied. A ≥ +4, B ≥ +2, C ±1, D -2 to -4, F ≤ -5.
           </p>
         </div>
       </div>

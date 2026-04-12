@@ -145,7 +145,8 @@ export function formatRoundSummary(data: RoundExportData): string {
       )} ${padLeft(scoreStr, 5)} ${padLeft(formatDifferential(perf.differential), 7)}`
     );
   });
-  L.push('Grade: A>=+3, B>=0, C>=-3, D>=-6, F<-6 vs handicap.');
+  L.push('Grade combines score vs handicap with holes won/tied.');
+  L.push('A>=+4, B>=+2, C within +/-1, D -2 to -4, F <=-5.');
   L.push('');
 
   // ---- Scorecard ----

@@ -483,7 +483,7 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
             );
           })}
           <div style={{ fontSize: 9, color: colors.muted, marginTop: 4 }}>
-            Grade: A ≥ +3, B ≥ 0, C ≥ -3, D ≥ -6, F &lt; -6 vs handicap.
+            Grade combines score vs handicap with holes won/tied. A ≥ +4, B ≥ +2, C ±1, D -2 to -4, F ≤ -5.
           </div>
         </div>
       )}

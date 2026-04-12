@@ -11,18 +11,29 @@ export interface PlayerPerformance {
   scoreToPar: number;
   expectedOverPar: number; // handicap scaled by holes played
   differential: number; // expectedOverPar - scoreToPar (positive = beat handicap)
+  adjustedDifferential: number; // differential + bonuses from holes won/tied
   grade: Grade;
   holesWon: number;
   holesTied: number;
   mvpScore: number;
 }
 
-// Grade thresholds based on differential (strokes better than handicap)
-export function getGrade(differential: number): Grade {
-  if (differential >= 3) return 'A';
-  if (differential >= 0) return 'B';
-  if (differential >= -3) return 'C';
-  if (differential >= -6) return 'D';
+// Bonus applied per sole hole won and per tied hole toward the grade calculation.
+const HOLE_WON_BONUS = 0.5;
+const HOLE_TIED_BONUS = 0.25;
+
+// Grade bands (applied to the rounded adjusted differential).
+// A: beat expectation by 4+
+// B: beat by 2 or 3
+// C: within 1 shot either way
+// D: worse by 2 to 4
+// F: worse by 5+
+export function getGrade(adjustedDifferential: number): Grade {
+  const rounded = Math.round(adjustedDifferential);
+  if (rounded >= 4) return 'A';
+  if (rounded >= 2) return 'B';
+  if (rounded >= -1) return 'C';
+  if (rounded >= -4) return 'D';
   return 'F';
 }
 
@@ -84,9 +95,10 @@ export function computePerformances(
     const scoreToPar = gross - parPlayed;
     const expectedOverPar = (p.handicap * holesPlayed) / totalHoles;
     const differential = expectedOverPar - scoreToPar;
-    const grade: Grade = holesPlayed === 0 ? 'F' : getGrade(differential);
     const won = holesWon.get(p.id) || 0;
     const tied = holesTied.get(p.id) || 0;
+    const adjustedDifferential = differential + won * HOLE_WON_BONUS + tied * HOLE_TIED_BONUS;
+    const grade: Grade = holesPlayed === 0 ? 'F' : getGrade(adjustedDifferential);
     // MVP scoring: sole wins valued highly, ties worth less, performance adds/subtracts
     const mvpScore = won * 3 + tied * 1 + differential * 2;
 
@@ -99,6 +111,7 @@ export function computePerformances(
       scoreToPar,
       expectedOverPar,
       differential,
+      adjustedDifferential,
       grade,
       holesWon: won,
       holesTied: tied,
@@ -118,3 +131,4 @@ export function formatDifferential(diff: number): string {
   if (rounded === 0) return 'E';
   return rounded > 0 ? `+${rounded}` : String(rounded);
 }
+
