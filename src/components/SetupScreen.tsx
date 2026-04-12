@@ -1,0 +1,347 @@
+import { useState } from 'react';
+import { Player, Match, HoleSetup } from '../types';
+
+interface Props {
+  players: Player[];
+  holes: HoleSetup[];
+  matches: Match[];
+  courseName: string;
+  pointValue: number;
+  onUpdatePlayer: (id: string, field: keyof Player, value: string | number) => void;
+  onAddPlayer: () => void;
+  onRemovePlayer: (id: string) => void;
+  onUpdateHole: (holeNum: number, field: keyof HoleSetup, value: number) => void;
+  onAutoGenerateMatches: () => void;
+  onAddMatch: (team1: [string, string], team2: [string, string], rotation: number) => void;
+  onRemoveMatch: (matchId: string) => void;
+  onSetMatches: (matches: Match[]) => void;
+  onSetCourseName: (name: string) => void;
+  onSetPointValue: (value: number) => void;
+  onStart: () => void;
+}
+
+type SetupStep = 'players' | 'course' | 'matches';
+
+export default function SetupScreen({
+  players,
+  holes,
+  matches,
+  courseName,
+  pointValue,
+  onUpdatePlayer,
+  onAddPlayer,
+  onRemovePlayer,
+  onUpdateHole,
+  onAutoGenerateMatches,
+  onRemoveMatch,
+  onSetMatches,
+  onSetCourseName,
+  onSetPointValue,
+  onAddMatch,
+  onStart,
+}: Props) {
+  const [step, setStep] = useState<SetupStep>('players');
+  const [newMatchRotation, setNewMatchRotation] = useState(1);
+  const [newMatchTeam1, setNewMatchTeam1] = useState<[string, string]>(['', '']);
+  const [newMatchTeam2, setNewMatchTeam2] = useState<[string, string]>(['', '']);
+
+  const canProceedFromPlayers = players.length >= 4 && players.every((p) => p.name.trim());
+
+  const handleAddMatch = () => {
+    if (newMatchTeam1[0] && newMatchTeam1[1] && newMatchTeam2[0] && newMatchTeam2[1]) {
+      onAddMatch(newMatchTeam1, newMatchTeam2, newMatchRotation);
+      setNewMatchTeam1(['', '']);
+      setNewMatchTeam2(['', '']);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 p-4 pb-24">
+      <h1 className="text-2xl font-bold text-center text-emerald-400 mb-6">
+        Vegas Golf Tracker
+      </h1>
+
+      {/* Step tabs */}
+      <div className="flex gap-1 mb-6 bg-slate-800 rounded-lg p-1">
+        {(['players', 'course', 'matches'] as SetupStep[]).map((s) => (
+          <button
+            key={s}
+            onClick={() => setStep(s)}
+            className={`flex-1 py-2 px-3 rounded-md text-sm font-medium capitalize transition-colors ${
+              step === s
+                ? 'bg-emerald-600 text-white'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {/* Players Step */}
+      {step === 'players' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold text-slate-200">Players</h2>
+            {players.length < 5 && (
+              <button
+                onClick={onAddPlayer}
+                className="text-sm bg-emerald-600 text-white px-3 py-1.5 rounded-lg"
+              >
+                + Add 5th Player
+              </button>
+            )}
+          </div>
+
+          {players.map((player, idx) => (
+            <div key={player.id} className="bg-slate-800 rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-emerald-400 font-bold text-lg">#{idx + 1}</span>
+                {players.length > 4 && (
+                  <button
+                    onClick={() => onRemovePlayer(player.id)}
+                    className="ml-auto text-red-400 text-sm"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Name</label>
+                  <input
+                    type="text"
+                    value={player.name}
+                    onChange={(e) => onUpdatePlayer(player.id, 'name', e.target.value)}
+                    placeholder="Player name"
+                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-400 mb-1 block">Handicap</label>
+                  <input
+                    type="number"
+                    value={player.handicap || ''}
+                    onChange={(e) =>
+                      onUpdatePlayer(player.id, 'handicap', parseInt(e.target.value) || 0)
+                    }
+                    placeholder="0"
+                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div className="mt-4">
+            <label className="text-xs text-slate-400 mb-1 block">Point Value ($)</label>
+            <input
+              type="number"
+              value={pointValue}
+              onChange={(e) => onSetPointValue(parseFloat(e.target.value) || 0.5)}
+              step="0.25"
+              min="0"
+              className="w-32 bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+
+          <button
+            onClick={() => setStep('course')}
+            disabled={!canProceedFromPlayers}
+            className="w-full mt-4 bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3 rounded-xl font-semibold text-lg"
+          >
+            Next: Course Setup
+          </button>
+        </div>
+      )}
+
+      {/* Course Step */}
+      {step === 'course' && (
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Course Name (optional)</label>
+            <input
+              type="text"
+              value={courseName}
+              onChange={(e) => onSetCourseName(e.target.value)}
+              placeholder="Course name"
+              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+
+          <h2 className="text-lg font-semibold text-slate-200">Hole Setup</h2>
+          <p className="text-xs text-slate-400">Set par and handicap rating (difficulty 1=hardest) for each hole.</p>
+
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {holes.map((hole) => (
+              <div key={hole.number} className="bg-slate-800 rounded-lg p-3 flex items-center gap-3">
+                <span className="text-emerald-400 font-bold w-8 text-center">#{hole.number}</span>
+                <div className="flex-1">
+                  <label className="text-xs text-slate-500">Par</label>
+                  <select
+                    value={hole.par}
+                    onChange={(e) => onUpdateHole(hole.number, 'par', parseInt(e.target.value))}
+                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600"
+                  >
+                    <option value={3}>3</option>
+                    <option value={4}>4</option>
+                    <option value={5}>5</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-slate-500">Hdcp</label>
+                  <input
+                    type="number"
+                    value={hole.handicapRating}
+                    onChange={(e) =>
+                      onUpdateHole(hole.number, 'handicapRating', parseInt(e.target.value) || 1)
+                    }
+                    min={1}
+                    max={18}
+                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600 focus:outline-none"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => {
+              if (matches.length === 0) onAutoGenerateMatches();
+              setStep('matches');
+            }}
+            className="w-full mt-4 bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg"
+          >
+            Next: Match Setup
+          </button>
+        </div>
+      )}
+
+      {/* Matches Step */}
+      {step === 'matches' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold text-slate-200">Matches</h2>
+            <button
+              onClick={() => {
+                onSetMatches([]);
+                onAutoGenerateMatches();
+              }}
+              className="text-sm bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg"
+            >
+              Auto-Generate
+            </button>
+          </div>
+
+          {[1, 2, 3].map((rotation) => {
+            const rotationMatches = matches.filter((m) => m.rotation === rotation);
+            return (
+              <div key={rotation} className="bg-slate-800 rounded-xl p-4">
+                <h3 className="text-emerald-400 font-semibold mb-3">
+                  Rotation {rotation} (Holes {(rotation - 1) * 6 + 1}-{rotation * 6})
+                </h3>
+                {rotationMatches.length === 0 && (
+                  <p className="text-slate-500 text-sm">No matches</p>
+                )}
+                {rotationMatches.map((match) => {
+                  const t1 = match.team1.map((id) => players.find((p) => p.id === id)?.name || '?');
+                  const t2 = match.team2.map((id) => players.find((p) => p.id === id)?.name || '?');
+                  return (
+                    <div key={match.id} className="flex items-center justify-between bg-slate-700 rounded-lg p-3 mb-2">
+                      <span className="text-sm text-white">
+                        <span className="text-emerald-300">{t1.join(' & ')}</span>
+                        <span className="text-slate-400 mx-2">vs</span>
+                        <span className="text-orange-300">{t2.join(' & ')}</span>
+                      </span>
+                      <button
+                        onClick={() => onRemoveMatch(match.id)}
+                        className="text-red-400 text-xs ml-2"
+                      >
+                        X
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+
+          {/* Add custom match */}
+          <div className="bg-slate-800 rounded-xl p-4">
+            <h3 className="text-slate-300 font-semibold mb-3 text-sm">Add Custom Match</h3>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <label className="text-xs text-slate-500">Rotation</label>
+                <select
+                  value={newMatchRotation}
+                  onChange={(e) => setNewMatchRotation(parseInt(e.target.value))}
+                  className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600"
+                >
+                  <option value={1}>1 (Holes 1-6)</option>
+                  <option value={2}>2 (Holes 7-12)</option>
+                  <option value={3}>3 (Holes 13-18)</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div>
+                <label className="text-xs text-emerald-400">Team 1</label>
+                {[0, 1].map((i) => (
+                  <select
+                    key={i}
+                    value={newMatchTeam1[i]}
+                    onChange={(e) => {
+                      const updated = [...newMatchTeam1] as [string, string];
+                      updated[i] = e.target.value;
+                      setNewMatchTeam1(updated);
+                    }}
+                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600 mb-1"
+                  >
+                    <option value="">Select player</option>
+                    {players.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name || `Player ${players.indexOf(p) + 1}`}</option>
+                    ))}
+                  </select>
+                ))}
+              </div>
+              <div>
+                <label className="text-xs text-orange-400">Team 2</label>
+                {[0, 1].map((i) => (
+                  <select
+                    key={i}
+                    value={newMatchTeam2[i]}
+                    onChange={(e) => {
+                      const updated = [...newMatchTeam2] as [string, string];
+                      updated[i] = e.target.value;
+                      setNewMatchTeam2(updated);
+                    }}
+                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600 mb-1"
+                  >
+                    <option value="">Select player</option>
+                    {players.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name || `Player ${players.indexOf(p) + 1}`}</option>
+                    ))}
+                  </select>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={handleAddMatch}
+              className="w-full bg-slate-600 text-white py-2 rounded-lg text-sm"
+            >
+              Add Match
+            </button>
+          </div>
+
+          <button
+            onClick={onStart}
+            disabled={matches.length === 0}
+            className="w-full mt-4 bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3 rounded-xl font-semibold text-lg"
+          >
+            Start Round
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
