@@ -56,23 +56,23 @@ export default function SetupScreen({
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4 pb-24">
-      <h1 className="text-2xl font-bold text-center text-emerald-400 mb-6 flex items-center justify-center gap-3">
+    <div className="min-h-screen bg-black p-4 pb-24">
+      <h1 className="text-2xl font-bold text-center text-red-500 mb-6 flex items-center justify-center gap-3">
         <span className="text-3xl" role="img" aria-label="dice">🎲</span>
         Vegas Golf Tracker
         <span className="text-3xl" role="img" aria-label="dice">🎲</span>
       </h1>
 
       {/* Step tabs */}
-      <div className="flex gap-1 mb-6 bg-slate-800 rounded-lg p-1">
+      <div className="flex gap-1 mb-6 bg-neutral-900 rounded-lg p-1">
         {(['players', 'course', 'matches'] as SetupStep[]).map((s) => (
           <button
             key={s}
             onClick={() => setStep(s)}
             className={`flex-1 py-2 px-3 rounded-md text-sm font-medium capitalize transition-colors ${
               step === s
-                ? 'bg-emerald-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-red-600 text-white'
+                : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
             {s}
@@ -84,11 +84,11 @@ export default function SetupScreen({
       {step === 'players' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-slate-200">Players</h2>
+            <h2 className="text-lg font-semibold text-neutral-200">Players</h2>
             {players.length < 5 && (
               <button
                 onClick={onAddPlayer}
-                className="text-sm bg-emerald-600 text-white px-3 py-1.5 rounded-lg"
+                className="text-sm bg-red-600 text-white px-3 py-1.5 rounded-lg"
               >
                 + Add 5th Player
               </button>
@@ -96,9 +96,9 @@ export default function SetupScreen({
           </div>
 
           {players.map((player, idx) => (
-            <div key={player.id} className="bg-slate-800 rounded-xl p-4">
+            <div key={player.id} className="bg-neutral-900 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-emerald-400 font-bold text-lg">#{idx + 1}</span>
+                <span className="text-red-500 font-bold text-lg">#{idx + 1}</span>
                 {players.length > 4 && (
                   <button
                     onClick={() => onRemovePlayer(player.id)}
@@ -110,17 +110,17 @@ export default function SetupScreen({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Name</label>
+                  <label className="text-xs text-neutral-400 mb-1 block">Name</label>
                   <input
                     type="text"
                     value={player.name}
                     onChange={(e) => onUpdatePlayer(player.id, 'name', e.target.value)}
                     placeholder="Player name"
-                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                    className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Handicap</label>
+                  <label className="text-xs text-neutral-400 mb-1 block">Handicap</label>
                   <input
                     type="number"
                     value={player.handicap || ''}
@@ -128,7 +128,7 @@ export default function SetupScreen({
                       onUpdatePlayer(player.id, 'handicap', parseInt(e.target.value) || 0)
                     }
                     placeholder="0"
-                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                    className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -136,21 +136,21 @@ export default function SetupScreen({
           ))}
 
           <div className="mt-4">
-            <label className="text-xs text-slate-400 mb-1 block">Point Value ($)</label>
+            <label className="text-xs text-neutral-400 mb-1 block">Point Value ($)</label>
             <input
               type="number"
               value={pointValue}
               onChange={(e) => onSetPointValue(parseFloat(e.target.value) || 0.5)}
               step="0.25"
               min="0"
-              className="w-32 bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+              className="w-32 bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
             />
           </div>
 
           <button
             onClick={() => setStep('course')}
             disabled={!canProceedFromPlayers}
-            className="w-full mt-4 bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3 rounded-xl font-semibold text-lg"
+            className="w-full mt-4 bg-red-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-white py-3 rounded-xl font-semibold text-lg"
           >
             Next: Course Setup
           </button>
@@ -161,29 +161,29 @@ export default function SetupScreen({
       {step === 'course' && (
         <div className="space-y-4">
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Course Name (optional)</label>
+            <label className="text-xs text-neutral-400 mb-1 block">Course Name (optional)</label>
             <input
               type="text"
               value={courseName}
               onChange={(e) => onSetCourseName(e.target.value)}
               placeholder="Course name"
-              className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+              className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
             />
           </div>
 
-          <h2 className="text-lg font-semibold text-slate-200">Hole Setup</h2>
-          <p className="text-xs text-slate-400">Set par and handicap rating (difficulty 1=hardest) for each hole.</p>
+          <h2 className="text-lg font-semibold text-neutral-200">Hole Setup</h2>
+          <p className="text-xs text-neutral-400">Set par and handicap rating (difficulty 1=hardest) for each hole.</p>
 
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {holes.map((hole) => (
-              <div key={hole.number} className="bg-slate-800 rounded-lg p-3 flex items-center gap-3">
-                <span className="text-emerald-400 font-bold w-8 text-center">#{hole.number}</span>
+              <div key={hole.number} className="bg-neutral-900 rounded-lg p-3 flex items-center gap-3">
+                <span className="text-red-500 font-bold w-8 text-center">#{hole.number}</span>
                 <div className="flex-1">
-                  <label className="text-xs text-slate-500">Par</label>
+                  <label className="text-xs text-neutral-500">Par</label>
                   <select
                     value={hole.par}
                     onChange={(e) => onUpdateHole(hole.number, 'par', parseInt(e.target.value))}
-                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600"
+                    className="w-full bg-neutral-800 text-white rounded px-2 py-1 text-sm border border-neutral-700"
                   >
                     <option value={3}>3</option>
                     <option value={4}>4</option>
@@ -191,7 +191,7 @@ export default function SetupScreen({
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-slate-500">Hdcp</label>
+                  <label className="text-xs text-neutral-500">Hdcp</label>
                   <input
                     type="number"
                     value={hole.handicapRating}
@@ -200,7 +200,7 @@ export default function SetupScreen({
                     }
                     min={1}
                     max={18}
-                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600 focus:outline-none"
+                    className="w-full bg-neutral-800 text-white rounded px-2 py-1 text-sm border border-neutral-700 focus:outline-none"
                   />
                 </div>
               </div>
@@ -212,7 +212,7 @@ export default function SetupScreen({
               if (matches.length === 0) onAutoGenerateMatches();
               setStep('matches');
             }}
-            className="w-full mt-4 bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg"
+            className="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-semibold text-lg"
           >
             Next: Match Setup
           </button>
@@ -223,13 +223,13 @@ export default function SetupScreen({
       {step === 'matches' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-slate-200">Matches</h2>
+            <h2 className="text-lg font-semibold text-neutral-200">Matches</h2>
             <button
               onClick={() => {
                 onSetMatches([]);
                 onAutoGenerateMatches();
               }}
-              className="text-sm bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg"
+              className="text-sm bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg"
             >
               Auto-Generate
             </button>
@@ -238,21 +238,21 @@ export default function SetupScreen({
           {[1, 2, 3].map((rotation) => {
             const rotationMatches = matches.filter((m) => m.rotation === rotation);
             return (
-              <div key={rotation} className="bg-slate-800 rounded-xl p-4">
-                <h3 className="text-emerald-400 font-semibold mb-3">
+              <div key={rotation} className="bg-neutral-900 rounded-xl p-4">
+                <h3 className="text-red-500 font-semibold mb-3">
                   Rotation {rotation} (Holes {(rotation - 1) * 6 + 1}-{rotation * 6})
                 </h3>
                 {rotationMatches.length === 0 && (
-                  <p className="text-slate-500 text-sm">No matches</p>
+                  <p className="text-neutral-500 text-sm">No matches</p>
                 )}
                 {rotationMatches.map((match) => {
                   const t1 = match.team1.map((id) => players.find((p) => p.id === id)?.name || '?');
                   const t2 = match.team2.map((id) => players.find((p) => p.id === id)?.name || '?');
                   return (
-                    <div key={match.id} className="flex items-center justify-between bg-slate-700 rounded-lg p-3 mb-2">
+                    <div key={match.id} className="flex items-center justify-between bg-neutral-800 rounded-lg p-3 mb-2">
                       <span className="text-sm text-white">
-                        <span className="text-emerald-300">{t1.join(' & ')}</span>
-                        <span className="text-slate-400 mx-2">vs</span>
+                        <span className="text-red-400">{t1.join(' & ')}</span>
+                        <span className="text-neutral-400 mx-2">vs</span>
                         <span className="text-orange-300">{t2.join(' & ')}</span>
                       </span>
                       <button
@@ -269,15 +269,15 @@ export default function SetupScreen({
           })}
 
           {/* Add custom match */}
-          <div className="bg-slate-800 rounded-xl p-4">
-            <h3 className="text-slate-300 font-semibold mb-3 text-sm">Add Custom Match</h3>
+          <div className="bg-neutral-900 rounded-xl p-4">
+            <h3 className="text-neutral-300 font-semibold mb-3 text-sm">Add Custom Match</h3>
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div>
-                <label className="text-xs text-slate-500">Rotation</label>
+                <label className="text-xs text-neutral-500">Rotation</label>
                 <select
                   value={newMatchRotation}
                   onChange={(e) => setNewMatchRotation(parseInt(e.target.value))}
-                  className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600"
+                  className="w-full bg-neutral-800 text-white rounded px-2 py-1 text-sm border border-neutral-700"
                 >
                   <option value={1}>1 (Holes 1-6)</option>
                   <option value={2}>2 (Holes 7-12)</option>
@@ -287,7 +287,7 @@ export default function SetupScreen({
             </div>
             <div className="grid grid-cols-2 gap-3 mb-2">
               <div>
-                <label className="text-xs text-emerald-400">Team 1</label>
+                <label className="text-xs text-red-500">Team 1</label>
                 {[0, 1].map((i) => (
                   <select
                     key={i}
@@ -297,7 +297,7 @@ export default function SetupScreen({
                       updated[i] = e.target.value;
                       setNewMatchTeam1(updated);
                     }}
-                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600 mb-1"
+                    className="w-full bg-neutral-800 text-white rounded px-2 py-1 text-sm border border-neutral-700 mb-1"
                   >
                     <option value="">Select player</option>
                     {players.map((p) => (
@@ -317,7 +317,7 @@ export default function SetupScreen({
                       updated[i] = e.target.value;
                       setNewMatchTeam2(updated);
                     }}
-                    className="w-full bg-slate-700 text-white rounded px-2 py-1 text-sm border border-slate-600 mb-1"
+                    className="w-full bg-neutral-800 text-white rounded px-2 py-1 text-sm border border-neutral-700 mb-1"
                   >
                     <option value="">Select player</option>
                     {players.map((p) => (
@@ -329,7 +329,7 @@ export default function SetupScreen({
             </div>
             <button
               onClick={handleAddMatch}
-              className="w-full bg-slate-600 text-white py-2 rounded-lg text-sm"
+              className="w-full bg-neutral-700 text-white py-2 rounded-lg text-sm"
             >
               Add Match
             </button>
@@ -338,7 +338,7 @@ export default function SetupScreen({
           <button
             onClick={onStart}
             disabled={matches.length === 0}
-            className="w-full mt-4 bg-emerald-600 disabled:bg-slate-700 disabled:text-slate-500 text-white py-3 rounded-xl font-semibold text-lg"
+            className="w-full mt-4 bg-red-600 disabled:bg-neutral-800 disabled:text-neutral-500 text-white py-3 rounded-xl font-semibold text-lg"
           >
             Start Round
           </button>

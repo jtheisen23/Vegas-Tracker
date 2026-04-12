@@ -26,18 +26,18 @@ export default function Scoreboard({
   getMultiplierValue,
 }: Props) {
   return (
-    <div className="min-h-screen bg-slate-900 p-4 pb-24">
+    <div className="min-h-screen bg-black p-4 pb-24">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="text-emerald-400 text-sm font-medium">
+        <button onClick={onBack} className="text-red-500 text-sm font-medium">
           &lt; Back
         </button>
-        <h1 className="text-xl font-bold text-emerald-400">Scoreboard</h1>
+        <h1 className="text-xl font-bold text-red-500">Scoreboard</h1>
         <div className="w-12" />
       </div>
 
       {/* Money Summary */}
-      <div className="bg-slate-800 rounded-xl p-4 mb-6">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+      <div className="bg-neutral-900 rounded-xl p-4 mb-6">
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide mb-3">
           Money Summary
         </h2>
         <div className="space-y-2">
@@ -45,11 +45,11 @@ export default function Scoreboard({
             .map((p) => ({ player: p, money: getPlayerMoney(p.id) }))
             .sort((a, b) => b.money - a.money)
             .map(({ player, money }) => (
-              <div key={player.id} className="flex items-center justify-between bg-slate-700 rounded-lg p-3">
+              <div key={player.id} className="flex items-center justify-between bg-neutral-800 rounded-lg p-3">
                 <span className="text-white font-medium">{player.name}</span>
                 <span
                   className={`font-bold text-lg ${
-                    money > 0 ? 'text-emerald-400' : money < 0 ? 'text-red-400' : 'text-slate-400'
+                    money > 0 ? 'text-red-500' : money < 0 ? 'text-red-400' : 'text-neutral-400'
                   }`}
                 >
                   {money >= 0 ? '+' : ''}${money.toFixed(2)}
@@ -66,7 +66,7 @@ export default function Scoreboard({
 
         return (
           <div key={rotation} className="mb-6">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide mb-3">
               Rotation {rotation} (Holes {(rotation - 1) * 6 + 1}-{rotation * 6})
             </h2>
 
@@ -78,22 +78,22 @@ export default function Scoreboard({
               const endHole = match.rotation * 6;
 
               return (
-                <div key={match.id} className="bg-slate-800 rounded-xl p-4 mb-3">
+                <div key={match.id} className="bg-neutral-900 rounded-xl p-4 mb-3">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <span className="text-emerald-300 text-sm font-semibold">{t1.join(' & ')}</span>
-                      <span className="text-slate-500 text-sm mx-2">vs</span>
+                      <span className="text-red-400 text-sm font-semibold">{t1.join(' & ')}</span>
+                      <span className="text-neutral-500 text-sm mx-2">vs</span>
                       <span className="text-orange-300 text-sm font-semibold">{t2.join(' & ')}</span>
                     </div>
-                    <span className={`font-bold text-lg ${total > 0 ? 'text-emerald-400' : total < 0 ? 'text-orange-400' : 'text-slate-400'}`}>
+                    <span className={`font-bold text-lg ${total > 0 ? 'text-red-500' : total < 0 ? 'text-orange-400' : 'text-neutral-400'}`}>
                       {total > 0 ? '+' : ''}{total} pts
                     </span>
                   </div>
                   <div className="text-right text-sm">
-                    <span className={`font-semibold ${total > 0 ? 'text-emerald-400' : total < 0 ? 'text-orange-400' : 'text-slate-400'}`}>
+                    <span className={`font-semibold ${total > 0 ? 'text-red-500' : total < 0 ? 'text-orange-400' : 'text-neutral-400'}`}>
                       ${Math.abs(total * pointValue).toFixed(2)}
                       {total !== 0 && (
-                        <span className="text-slate-500 ml-1">
+                        <span className="text-neutral-500 ml-1">
                           to {total > 0 ? t1.join(' & ') : t2.join(' & ')}
                         </span>
                       )}
@@ -101,18 +101,18 @@ export default function Scoreboard({
                   </div>
 
                   {/* Hole-by-hole breakdown */}
-                  <div className="mt-3 pt-3 border-t border-slate-700">
+                  <div className="mt-3 pt-3 border-t border-neutral-800">
                     <div className="grid grid-cols-7 gap-1 text-xs text-center">
-                      <div className="text-slate-500">Hole</div>
+                      <div className="text-neutral-500">Hole</div>
                       {Array.from({ length: 6 }, (_, i) => startHole + i).map((h) => (
-                        <div key={h} className="text-slate-500">{h}</div>
+                        <div key={h} className="text-neutral-500">{h}</div>
                       ))}
                     </div>
                     <div className="grid grid-cols-7 gap-1 text-xs text-center mt-1">
-                      <div className="text-slate-500">Pts</div>
+                      <div className="text-neutral-500">Pts</div>
                       {Array.from({ length: 6 }, (_, i) => startHole + i).map((h) => {
                         const result = getMatchResultsForHole(match, h);
-                        if (!result) return <div key={h} className="text-slate-600">-</div>;
+                        if (!result) return <div key={h} className="text-neutral-600">-</div>;
                         const mult = getMultiplier(match.id, h);
                         const multVal = getMultiplierValue(mult);
                         const pts = result.points * multVal;
@@ -122,10 +122,10 @@ export default function Scoreboard({
                             key={h}
                             className={`font-semibold ${
                               pts > 0
-                                ? 'text-emerald-400'
+                                ? 'text-red-500'
                                 : pts < 0
                                 ? 'text-orange-400'
-                                : 'text-slate-500'
+                                : 'text-neutral-500'
                             }`}
                           >
                             {pts > 0 ? '+' : ''}{pts}
@@ -144,7 +144,7 @@ export default function Scoreboard({
 
       <button
         onClick={onFinish}
-        className="w-full mt-4 bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg"
+        className="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-semibold text-lg"
       >
         Finish & Save Round
       </button>

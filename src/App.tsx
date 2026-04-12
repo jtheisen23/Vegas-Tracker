@@ -75,7 +75,7 @@ function App() {
       />
       <button
         onClick={() => round.setScreen('history')}
-        className="fixed bottom-4 right-4 bg-slate-700 text-slate-300 px-4 py-2 rounded-lg text-sm"
+        className="fixed bottom-4 right-4 bg-neutral-800 text-neutral-300 px-4 py-2 rounded-lg text-sm"
       >
         History
       </button>

@@ -62,17 +62,17 @@ export default function HoleEntry({
     .every((p) => scores[p.id]?.[currentHole] != null);
 
   return (
-    <div className="min-h-screen bg-slate-900 p-4 pb-24">
+    <div className="min-h-screen bg-black p-4 pb-24">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={onShowScoreboard}
-          className="text-emerald-400 text-sm font-medium"
+          className="text-red-500 text-sm font-medium"
         >
           Scoreboard
         </button>
-        <h1 className="text-xl font-bold text-emerald-400">Hole {currentHole}</h1>
-        <div className="text-sm text-slate-400">
+        <h1 className="text-xl font-bold text-red-500">Hole {currentHole}</h1>
+        <div className="text-sm text-neutral-400">
           Par {hole.par} | R{rotation}
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function HoleEntry({
         <button
           onClick={() => onSetCurrentHole(Math.max(1, currentHole - 1))}
           disabled={currentHole === 1}
-          className="bg-slate-700 disabled:bg-slate-800 disabled:text-slate-600 text-white w-10 h-10 rounded-lg font-bold text-lg"
+          className="bg-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600 text-white w-10 h-10 rounded-lg font-bold text-lg"
         >
           &lt;
         </button>
@@ -93,10 +93,10 @@ export default function HoleEntry({
               onClick={() => onSetCurrentHole(h.number)}
               className={`w-8 h-8 rounded-md text-xs font-medium flex-shrink-0 ${
                 h.number === currentHole
-                  ? 'bg-emerald-600 text-white'
+                  ? 'bg-red-600 text-white'
                   : players.every((p) => !activePlayerIds.has(p.id) || scores[p.id]?.[h.number] != null)
-                    ? 'bg-slate-600 text-slate-300'
-                    : 'bg-slate-800 text-slate-500'
+                    ? 'bg-neutral-700 text-neutral-300'
+                    : 'bg-neutral-900 text-neutral-500'
               }`}
             >
               {h.number}
@@ -106,7 +106,7 @@ export default function HoleEntry({
         <button
           onClick={() => onSetCurrentHole(Math.min(18, currentHole + 1))}
           disabled={currentHole === 18}
-          className="bg-slate-700 disabled:bg-slate-800 disabled:text-slate-600 text-white w-10 h-10 rounded-lg font-bold text-lg"
+          className="bg-neutral-800 disabled:bg-neutral-900 disabled:text-neutral-600 text-white w-10 h-10 rounded-lg font-bold text-lg"
         >
           &gt;
         </button>
@@ -114,7 +114,7 @@ export default function HoleEntry({
 
       {/* Score entry */}
       <div className="space-y-3 mb-6">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Enter Gross Scores</h2>
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Enter Gross Scores</h2>
         {players
           .filter((p) => activePlayerIds.has(p.id))
           .map((player) => {
@@ -123,17 +123,17 @@ export default function HoleEntry({
             const net = gross != null ? getNetScore(gross, player.strokesReceived, hole.handicapRating) : null;
 
             return (
-              <div key={player.id} className="bg-slate-800 rounded-xl p-3 flex items-center gap-3">
+              <div key={player.id} className="bg-neutral-900 rounded-xl p-3 flex items-center gap-3">
                 <div className="flex-1">
                   <div className="text-white font-medium text-sm">{player.name}</div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-neutral-500">
                     {strokes > 0 ? (
                       <span className="text-yellow-400">{strokes} stroke{strokes > 1 ? 's' : ''}</span>
                     ) : (
                       'No strokes'
                     )}
                     {net != null && (
-                      <span className="ml-2 text-slate-400">Net: {net}</span>
+                      <span className="ml-2 text-neutral-400">Net: {net}</span>
                     )}
                   </div>
                 </div>
@@ -143,7 +143,7 @@ export default function HoleEntry({
                       const current = scores[player.id]?.[currentHole] || hole.par;
                       if (current > 1) handleScoreChange(player.id, String(current - 1));
                     }}
-                    className="bg-slate-700 text-white w-9 h-9 rounded-lg text-lg font-bold"
+                    className="bg-neutral-800 text-white w-9 h-9 rounded-lg text-lg font-bold"
                   >
                     -
                   </button>
@@ -152,14 +152,14 @@ export default function HoleEntry({
                     value={scores[player.id]?.[currentHole] ?? ''}
                     onChange={(e) => handleScoreChange(player.id, e.target.value)}
                     placeholder={String(hole.par)}
-                    className="w-14 h-9 bg-slate-700 text-white text-center rounded-lg text-lg font-bold border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                    className="w-14 h-9 bg-neutral-800 text-white text-center rounded-lg text-lg font-bold border border-neutral-700 focus:border-red-500 focus:outline-none"
                   />
                   <button
                     onClick={() => {
                       const current = scores[player.id]?.[currentHole] || hole.par;
                       if (current < 15) handleScoreChange(player.id, String(current + 1));
                     }}
-                    className="bg-slate-700 text-white w-9 h-9 rounded-lg text-lg font-bold"
+                    className="bg-neutral-800 text-white w-9 h-9 rounded-lg text-lg font-bold"
                   >
                     +
                   </button>
@@ -172,7 +172,7 @@ export default function HoleEntry({
       {/* Match results for this hole */}
       {allScoresEntered && (
         <div className="space-y-3 mb-6">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">This Hole</h2>
+          <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">This Hole</h2>
           {activeMatches.map((match) => {
             const result = getMatchResultsForHole(match, currentHole);
             if (!result) return null;
@@ -191,24 +191,24 @@ export default function HoleEntry({
               null;
 
             return (
-              <div key={match.id} className="bg-slate-800 rounded-xl p-4">
+              <div key={match.id} className="bg-neutral-900 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-semibold ${winner === 'team1' ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  <span className={`text-sm font-semibold ${winner === 'team1' ? 'text-red-500' : 'text-neutral-400'}`}>
                     {t1.join(' & ')}
                   </span>
                   <span className="text-lg font-bold text-white">{result.team1Vegas}</span>
                 </div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-sm font-semibold ${winner === 'team2' ? 'text-orange-400' : 'text-slate-400'}`}>
+                  <span className={`text-sm font-semibold ${winner === 'team2' ? 'text-orange-400' : 'text-neutral-400'}`}>
                     {t2.join(' & ')}
                   </span>
                   <span className="text-lg font-bold text-white">{result.team2Vegas}</span>
                 </div>
-                <div className="text-center mt-2 pt-2 border-t border-slate-700">
+                <div className="text-center mt-2 pt-2 border-t border-neutral-800">
                   {winner === 'tie' ? (
-                    <span className="text-slate-400 text-sm">Push</span>
+                    <span className="text-neutral-400 text-sm">Push</span>
                   ) : (
-                    <span className={`font-bold ${winner === 'team1' ? 'text-emerald-400' : 'text-orange-400'}`}>
+                    <span className={`font-bold ${winner === 'team1' ? 'text-red-500' : 'text-orange-400'}`}>
                       {winner === 'team1' ? t1.join(' & ') : t2.join(' & ')} win {Math.abs(multipliedPoints)} pts
                       {currentMult !== 'none' && (
                         <span className="text-yellow-400 ml-1 text-xs uppercase">({currentMult} x{multValue})</span>
@@ -218,11 +218,11 @@ export default function HoleEntry({
                 </div>
 
                 {/* Press / Roll / Re-Roll buttons */}
-                <div className="flex gap-2 mt-3 pt-3 border-t border-slate-700">
+                <div className="flex gap-2 mt-3 pt-3 border-t border-neutral-800">
                   {currentMult !== 'none' && (
                     <button
                       onClick={() => onSetMultiplier(match.id, currentHole, 'none')}
-                      className="flex-1 py-2 rounded-lg text-xs font-semibold bg-slate-700 text-slate-400"
+                      className="flex-1 py-2 rounded-lg text-xs font-semibold bg-neutral-800 text-neutral-400"
                     >
                       Clear
                     </button>
@@ -249,7 +249,7 @@ export default function HoleEntry({
 
       {/* Running totals for active matches */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wide">Running Totals (Rotation {rotation})</h2>
+        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide">Running Totals (Rotation {rotation})</h2>
         {activeMatches.map((match) => {
           let total = 0;
           const startHole = (match.rotation - 1) * 6 + 1;
@@ -261,13 +261,13 @@ export default function HoleEntry({
           const t2 = match.team2.map((id) => players.find((p) => p.id === id)?.name || '?');
 
           return (
-            <div key={match.id} className="bg-slate-800 rounded-lg p-3 flex items-center justify-between">
+            <div key={match.id} className="bg-neutral-900 rounded-lg p-3 flex items-center justify-between">
               <div className="text-sm">
-                <span className="text-emerald-300">{t1.join(' & ')}</span>
-                <span className="text-slate-500 mx-1">vs</span>
+                <span className="text-red-400">{t1.join(' & ')}</span>
+                <span className="text-neutral-500 mx-1">vs</span>
                 <span className="text-orange-300">{t2.join(' & ')}</span>
               </div>
-              <span className={`font-bold text-lg ${total > 0 ? 'text-emerald-400' : total < 0 ? 'text-orange-400' : 'text-slate-400'}`}>
+              <span className={`font-bold text-lg ${total > 0 ? 'text-red-500' : total < 0 ? 'text-orange-400' : 'text-neutral-400'}`}>
                 {total > 0 ? '+' : ''}{total}
               </span>
             </div>
@@ -279,7 +279,7 @@ export default function HoleEntry({
       {allScoresEntered && currentHole < 18 && (
         <button
           onClick={() => onSetCurrentHole(currentHole + 1)}
-          className="w-full mt-6 bg-emerald-600 text-white py-3 rounded-xl font-semibold text-lg"
+          className="w-full mt-6 bg-red-600 text-white py-3 rounded-xl font-semibold text-lg"
         >
           Next Hole &gt;
         </button>
