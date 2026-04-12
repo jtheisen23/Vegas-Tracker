@@ -20,6 +20,8 @@ function App() {
         getMatchTotal={round.getMatchTotal}
         getPlayerMoney={round.getPlayerMoney}
         getMatchResultsForHole={round.getMatchResultsForHole}
+        getMultiplier={round.getMultiplier}
+        getMultiplierValue={round.getMultiplierValue}
         onBack={() => round.setScreen('holes')}
         onFinish={() => {
           round.finishRound();
@@ -44,6 +46,9 @@ function App() {
         getMatchResultsForHole={round.getMatchResultsForHole}
         getActiveMatches={round.getActiveMatches}
         getCurrentRotation={round.getCurrentRotation}
+        getMultiplier={round.getMultiplier}
+        getMultiplierValue={round.getMultiplierValue}
+        onSetMultiplier={round.setMatchMultiplier}
       />
     );
   }

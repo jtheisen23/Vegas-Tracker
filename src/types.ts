@@ -49,3 +49,5 @@ export interface MatchResult {
 }
 
 export type Screen = 'setup' | 'holes' | 'scoreboard' | 'history';
+
+export type Multiplier = 'none' | 'press' | 'roll' | 're-roll';

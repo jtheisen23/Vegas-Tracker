@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Player, Match, HoleSetup, Round, Screen, SavedRound, MatchResult } from '../types';
+import { Player, Match, HoleSetup, Round, Screen, SavedRound, MatchResult, Multiplier } from '../types';
 import { calculateStrokesReceived } from '../utils/handicap';
 import { calculateVegasPoints, getNetScore } from '../utils/scoring';
 import { saveRound } from '../utils/storage';
@@ -28,6 +28,8 @@ export function useRound() {
   const [currentHole, setCurrentHole] = useState(1);
   const [courseName, setCourseName] = useState('');
   const [pointValue, setPointValue] = useState(0.5);
+  // matchId -> holeNumber -> Multiplier
+  const [multipliers, setMultipliers] = useState<Record<string, Record<number, Multiplier>>>({});
 
   const addPlayer = useCallback(() => {
     if (players.length >= 5) return;
@@ -108,6 +110,32 @@ export function useRound() {
     }));
   }, []);
 
+  const getMultiplier = useCallback(
+    (matchId: string, holeNumber: number): Multiplier => {
+      return multipliers[matchId]?.[holeNumber] || 'none';
+    },
+    [multipliers]
+  );
+
+  const getMultiplierValue = useCallback((m: Multiplier): number => {
+    switch (m) {
+      case 'press': return 2;
+      case 'roll': return 4;
+      case 're-roll': return 8;
+      default: return 1;
+    }
+  }, []);
+
+  const setMatchMultiplier = useCallback((matchId: string, holeNumber: number, value: Multiplier) => {
+    setMultipliers((prev) => ({
+      ...prev,
+      [matchId]: {
+        ...prev[matchId],
+        [holeNumber]: value,
+      },
+    }));
+  }, []);
+
   const clearScore = useCallback((playerId: string, holeNumber: number) => {
     setScores((prev) => {
       const playerScores = { ...prev[playerId] };
@@ -151,11 +179,14 @@ export function useRound() {
       let total = 0;
       for (let h = startHole; h <= endHole; h++) {
         const result = getMatchResultsForHole(match, h);
-        if (result) total += result.points;
+        if (result) {
+          const mult = getMultiplierValue(getMultiplier(match.id, h));
+          total += result.points * mult;
+        }
       }
       return total;
     },
-    [getMatchResultsForHole]
+    [getMatchResultsForHole, getMultiplier, getMultiplierValue]
   );
 
   const getPlayerMoney = useCallback(
@@ -244,5 +275,9 @@ export function useRound() {
     getCurrentRotation,
     getActiveMatches,
     finishRound,
+    multipliers,
+    getMultiplier,
+    getMultiplierValue,
+    setMatchMultiplier,
   };
 }

@@ -1,4 +1,4 @@
-import { Player, Match } from '../types';
+import { Player, Match, Multiplier } from '../types';
 
 interface Props {
   players: Player[];
@@ -9,6 +9,8 @@ interface Props {
   onBack: () => void;
   onFinish: () => void;
   getMatchResultsForHole: (match: Match, holeNumber: number) => { team1Vegas: number; team2Vegas: number; points: number } | null;
+  getMultiplier: (matchId: string, holeNumber: number) => Multiplier;
+  getMultiplierValue: (m: Multiplier) => number;
 }
 
 export default function Scoreboard({
@@ -20,6 +22,8 @@ export default function Scoreboard({
   onBack,
   onFinish,
   getMatchResultsForHole,
+  getMultiplier,
+  getMultiplierValue,
 }: Props) {
   return (
     <div className="min-h-screen bg-slate-900 p-4 pb-24">
@@ -109,18 +113,23 @@ export default function Scoreboard({
                       {Array.from({ length: 6 }, (_, i) => startHole + i).map((h) => {
                         const result = getMatchResultsForHole(match, h);
                         if (!result) return <div key={h} className="text-slate-600">-</div>;
+                        const mult = getMultiplier(match.id, h);
+                        const multVal = getMultiplierValue(mult);
+                        const pts = result.points * multVal;
+                        const multLabel = mult === 'press' ? 'P' : mult === 'roll' ? 'R' : mult === 're-roll' ? 'RR' : '';
                         return (
                           <div
                             key={h}
                             className={`font-semibold ${
-                              result.points > 0
+                              pts > 0
                                 ? 'text-emerald-400'
-                                : result.points < 0
+                                : pts < 0
                                 ? 'text-orange-400'
                                 : 'text-slate-500'
                             }`}
                           >
-                            {result.points > 0 ? '+' : ''}{result.points}
+                            {pts > 0 ? '+' : ''}{pts}
+                            {multLabel && <div className="text-yellow-400 text-[9px]">{multLabel}</div>}
                           </div>
                         );
                       })}

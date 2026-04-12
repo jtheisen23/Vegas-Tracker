@@ -1,4 +1,4 @@
-import { Player, Match, HoleSetup } from '../types';
+import { Player, Match, HoleSetup, Multiplier } from '../types';
 import { getNetScore } from '../utils/scoring';
 import { getStrokesOnHole } from '../utils/handicap';
 
@@ -15,6 +15,9 @@ interface Props {
   getMatchResultsForHole: (match: Match, holeNumber: number) => { team1Vegas: number; team2Vegas: number; points: number } | null;
   getActiveMatches: () => Match[];
   getCurrentRotation: () => number;
+  getMultiplier: (matchId: string, holeNumber: number) => Multiplier;
+  getMultiplierValue: (m: Multiplier) => number;
+  onSetMultiplier: (matchId: string, holeNumber: number, value: Multiplier) => void;
 }
 
 export default function HoleEntry({
@@ -30,6 +33,9 @@ export default function HoleEntry({
   getActiveMatches,
   getCurrentRotation,
   matches,
+  getMultiplier,
+  getMultiplierValue,
+  onSetMultiplier,
 }: Props) {
   const hole = holes.find((h) => h.number === currentHole)!;
   const activeMatches = getActiveMatches();
@@ -173,6 +179,16 @@ export default function HoleEntry({
             const t1 = match.team1.map((id) => players.find((p) => p.id === id)?.name || '?');
             const t2 = match.team2.map((id) => players.find((p) => p.id === id)?.name || '?');
             const winner = result.points > 0 ? 'team1' : result.points < 0 ? 'team2' : 'tie';
+            const currentMult = getMultiplier(match.id, currentHole);
+            const multValue = getMultiplierValue(currentMult);
+            const multipliedPoints = result.points * multValue;
+
+            // Determine next escalation step
+            const nextStep: { label: string; value: Multiplier } | null =
+              currentMult === 'none' ? { label: 'Press (x2)', value: 'press' } :
+              currentMult === 'press' ? { label: 'Roll (x4)', value: 'roll' } :
+              currentMult === 'roll' ? { label: 'Re-Roll (x8)', value: 're-roll' } :
+              null;
 
             return (
               <div key={match.id} className="bg-slate-800 rounded-xl p-4">
@@ -193,7 +209,35 @@ export default function HoleEntry({
                     <span className="text-slate-400 text-sm">Push</span>
                   ) : (
                     <span className={`font-bold ${winner === 'team1' ? 'text-emerald-400' : 'text-orange-400'}`}>
-                      {winner === 'team1' ? t1.join(' & ') : t2.join(' & ')} win {Math.abs(result.points)} pts
+                      {winner === 'team1' ? t1.join(' & ') : t2.join(' & ')} win {Math.abs(multipliedPoints)} pts
+                      {currentMult !== 'none' && (
+                        <span className="text-yellow-400 ml-1 text-xs uppercase">({currentMult} x{multValue})</span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                {/* Press / Roll / Re-Roll buttons */}
+                <div className="flex gap-2 mt-3 pt-3 border-t border-slate-700">
+                  {currentMult !== 'none' && (
+                    <button
+                      onClick={() => onSetMultiplier(match.id, currentHole, 'none')}
+                      className="flex-1 py-2 rounded-lg text-xs font-semibold bg-slate-700 text-slate-400"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  {nextStep && (
+                    <button
+                      onClick={() => onSetMultiplier(match.id, currentHole, nextStep.value)}
+                      className="flex-1 py-2 rounded-lg text-xs font-bold bg-yellow-600 text-white"
+                    >
+                      {nextStep.label}
+                    </button>
+                  )}
+                  {currentMult === 're-roll' && (
+                    <span className="flex-1 py-2 rounded-lg text-xs font-bold bg-red-900 text-red-300 text-center">
+                      Max (x8)
                     </span>
                   )}
                 </div>
@@ -211,7 +255,7 @@ export default function HoleEntry({
           const startHole = (match.rotation - 1) * 6 + 1;
           for (let h = startHole; h <= currentHole; h++) {
             const r = getMatchResultsForHole(match, h);
-            if (r) total += r.points;
+            if (r) total += r.points * getMultiplierValue(getMultiplier(match.id, h));
           }
           const t1 = match.team1.map((id) => players.find((p) => p.id === id)?.name || '?');
           const t2 = match.team2.map((id) => players.find((p) => p.id === id)?.name || '?');
