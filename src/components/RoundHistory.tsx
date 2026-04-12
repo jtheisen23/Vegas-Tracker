@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SavedRound } from '../types';
 import { loadRounds, deleteRound } from '../utils/storage';
+import ShareMenu from './ShareMenu';
 
 interface Props {
   onBack: () => void;
@@ -85,9 +86,24 @@ export default function RoundHistory({ onBack }: Props) {
                     </div>
                   ))}
 
+                  <div className="mt-3">
+                    <ShareMenu
+                      data={{
+                        courseName: round.courseName,
+                        date: round.date,
+                        players: round.players,
+                        holes: round.holes,
+                        matches: round.matches,
+                        scores: round.scores,
+                        results: round.results,
+                        pointValue: round.pointsPerDollar,
+                      }}
+                    />
+                  </div>
+
                   <button
                     onClick={() => handleDelete(round.id)}
-                    className="mt-2 text-red-400 text-xs"
+                    className="mt-3 text-red-400 text-xs"
                   >
                     Delete Round
                   </button>

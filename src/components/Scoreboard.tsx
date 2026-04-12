@@ -1,10 +1,12 @@
-import { Player, Match, Multiplier, HoleSetup } from '../types';
+import { Player, Match, Multiplier, HoleSetup, MatchResult } from '../types';
+import ShareMenu from './ShareMenu';
 
 interface Props {
   players: Player[];
   matches: Match[];
   holes: HoleSetup[];
   scores: Record<string, Record<number, number>>;
+  courseName: string;
   pointValue: number;
   getMatchTotal: (match: Match) => number;
   getPlayerMoney: (playerId: string) => number;
@@ -20,6 +22,7 @@ export default function Scoreboard({
   matches,
   holes,
   scores,
+  courseName,
   pointValue,
   getMatchTotal,
   getPlayerMoney,
@@ -264,6 +267,33 @@ export default function Scoreboard({
           </div>
         );
       })}
+
+      {/* Share Menu */}
+      <div className="mb-4">
+        <ShareMenu
+          data={{
+            courseName,
+            date: new Date().toISOString(),
+            players,
+            holes,
+            matches,
+            scores,
+            pointValue,
+            results: matches.map<MatchResult>((match) => {
+              const total = getMatchTotal(match);
+              const t1 = match.team1.map((id) => players.find((p) => p.id === id)?.name || '').join(' & ');
+              const t2 = match.team2.map((id) => players.find((p) => p.id === id)?.name || '').join(' & ');
+              return {
+                matchId: match.id,
+                team1Names: t1,
+                team2Names: t2,
+                totalPoints: total,
+                money: total * pointValue,
+              };
+            }),
+          }}
+        />
+      </div>
 
       <button
         onClick={onFinish}

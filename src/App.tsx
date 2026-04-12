@@ -31,6 +31,7 @@ function App() {
         matches={round.matches}
         holes={round.holes}
         scores={round.scores}
+        courseName={round.courseName}
         pointValue={round.pointValue}
         getMatchTotal={round.getMatchTotal}
         getPlayerMoney={round.getPlayerMoney}
