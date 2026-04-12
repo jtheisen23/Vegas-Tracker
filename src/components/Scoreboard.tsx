@@ -1,8 +1,10 @@
-import { Player, Match, Multiplier } from '../types';
+import { Player, Match, Multiplier, HoleSetup } from '../types';
 
 interface Props {
   players: Player[];
   matches: Match[];
+  holes: HoleSetup[];
+  scores: Record<string, Record<number, number>>;
   pointValue: number;
   getMatchTotal: (match: Match) => number;
   getPlayerMoney: (playerId: string) => number;
@@ -16,6 +18,8 @@ interface Props {
 export default function Scoreboard({
   players,
   matches,
+  holes,
+  scores,
   pointValue,
   getMatchTotal,
   getPlayerMoney,
@@ -25,6 +29,54 @@ export default function Scoreboard({
   getMultiplier,
   getMultiplierValue,
 }: Props) {
+  // --- Post-round summary calculations ---
+
+  // Money rankings
+  const moneyRankings = players
+    .map((p) => ({ player: p, money: getPlayerMoney(p.id) }))
+    .sort((a, b) => b.money - a.money);
+
+  // Holes won: for each hole, players with the lowest gross score win it (ties = all win).
+  const holesWonMap = new Map<string, number>();
+  players.forEach((p) => holesWonMap.set(p.id, 0));
+  holes.forEach((hole) => {
+    const entries = players
+      .map((p) => ({ id: p.id, score: scores[p.id]?.[hole.number] }))
+      .filter((e): e is { id: string; score: number } => e.score != null);
+    if (entries.length === 0) return;
+    const minScore = Math.min(...entries.map((e) => e.score));
+    entries.forEach(({ id, score }) => {
+      if (score === minScore) {
+        holesWonMap.set(id, (holesWonMap.get(id) || 0) + 1);
+      }
+    });
+  });
+  const holesWonRankings = players
+    .map((p) => ({ player: p, count: holesWonMap.get(p.id) || 0 }))
+    .sort((a, b) => b.count - a.count);
+
+  // Partnerships: combine each unique pair's points across all matches
+  const partnershipMap = new Map<string, { ids: [string, string]; points: number }>();
+  matches.forEach((match) => {
+    const total = getMatchTotal(match);
+    const pairs: { pair: [string, string]; points: number }[] = [
+      { pair: match.team1, points: total },
+      { pair: match.team2, points: -total },
+    ];
+    pairs.forEach(({ pair, points }) => {
+      const key = [...pair].sort().join('|');
+      const existing = partnershipMap.get(key);
+      if (existing) {
+        existing.points += points;
+      } else {
+        partnershipMap.set(key, { ids: pair, points });
+      }
+    });
+  });
+  const partnershipRankings = Array.from(partnershipMap.values()).sort((a, b) => b.points - a.points);
+
+  const playerName = (id: string) => players.find((p) => p.id === id)?.name || '?';
+
   return (
     <div className="min-h-screen bg-black p-4 pb-24">
       <div className="flex items-center justify-between mb-6">
@@ -35,28 +87,99 @@ export default function Scoreboard({
         <div className="w-12" />
       </div>
 
-      {/* Money Summary */}
-      <div className="bg-neutral-900 rounded-xl p-4 mb-6">
-        <h2 className="text-sm font-semibold text-neutral-400 uppercase tracking-wide mb-3">
-          Money Summary
-        </h2>
-        <div className="space-y-2">
-          {players
-            .map((p) => ({ player: p, money: getPlayerMoney(p.id) }))
-            .sort((a, b) => b.money - a.money)
-            .map(({ player, money }) => (
-              <div key={player.id} className="flex items-center justify-between bg-neutral-800 rounded-lg p-3">
-                <span className="text-white font-medium">{player.name}</span>
+      {/* Post-Round Summary */}
+      <div className="bg-gradient-to-br from-red-950 to-neutral-900 border border-red-900 rounded-xl p-4 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xl">🏆</span>
+          <h2 className="text-sm font-bold text-yellow-400 uppercase tracking-wide">
+            Round Summary
+          </h2>
+        </div>
+
+        {/* Money Ranking */}
+        <div className="mb-4">
+          <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
+            Money Leaderboard
+          </h3>
+          <div className="space-y-1.5">
+            {moneyRankings.map(({ player, money }, idx) => (
+              <div key={player.id} className="flex items-center justify-between bg-neutral-800/60 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-bold w-5 text-center ${
+                    idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-neutral-300' : idx === 2 ? 'text-orange-400' : 'text-neutral-500'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span className="text-white text-sm font-medium">{player.name}</span>
+                </div>
                 <span
-                  className={`font-bold text-lg ${
-                    money > 0 ? 'text-red-500' : money < 0 ? 'text-red-400' : 'text-neutral-400'
+                  className={`font-bold ${
+                    money > 0 ? 'text-red-400' : money < 0 ? 'text-orange-400' : 'text-neutral-400'
                   }`}
                 >
                   {money >= 0 ? '+' : ''}${money.toFixed(2)}
                 </span>
               </div>
             ))}
+          </div>
         </div>
+
+        {/* Holes Won Ranking */}
+        <div className="mb-4">
+          <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
+            Holes Won (Low Gross)
+          </h3>
+          <div className="space-y-1.5">
+            {holesWonRankings.map(({ player, count }, idx) => (
+              <div key={player.id} className="flex items-center justify-between bg-neutral-800/60 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-bold w-5 text-center ${
+                    idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-neutral-300' : idx === 2 ? 'text-orange-400' : 'text-neutral-500'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span className="text-white text-sm font-medium">{player.name}</span>
+                </div>
+                <span className="font-bold text-red-400">
+                  {count} {count === 1 ? 'hole' : 'holes'}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-neutral-500 mt-1">Ties counted as wins for all tied players.</p>
+        </div>
+
+        {/* Partnership Rankings */}
+        {partnershipRankings.length > 0 && (
+          <div>
+            <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
+              Best Partnerships
+            </h3>
+            <div className="space-y-1.5">
+              {partnershipRankings.map(({ ids, points }, idx) => (
+                <div key={ids.join('-')} className="flex items-center justify-between bg-neutral-800/60 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold w-5 text-center ${
+                      idx === 0 ? 'text-yellow-400' : idx === 1 ? 'text-neutral-300' : idx === 2 ? 'text-orange-400' : 'text-neutral-500'
+                    }`}>
+                      {idx + 1}
+                    </span>
+                    <span className="text-white text-sm font-medium">
+                      {playerName(ids[0])} <span className="text-neutral-500">&</span> {playerName(ids[1])}
+                    </span>
+                  </div>
+                  <span
+                    className={`font-bold ${
+                      points > 0 ? 'text-red-400' : points < 0 ? 'text-orange-400' : 'text-neutral-400'
+                    }`}
+                  >
+                    {points > 0 ? '+' : ''}{points} pts
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Match Details */}

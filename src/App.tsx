@@ -29,6 +29,8 @@ function App() {
       <Scoreboard
         players={round.players}
         matches={round.matches}
+        holes={round.holes}
+        scores={round.scores}
         pointValue={round.pointValue}
         getMatchTotal={round.getMatchTotal}
         getPlayerMoney={round.getPlayerMoney}
