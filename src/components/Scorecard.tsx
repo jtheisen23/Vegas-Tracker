@@ -51,36 +51,36 @@ export default function Scorecard({ players, holes, scores, courseName, onBack }
     const inner = 'inline-flex items-center justify-center w-6 h-6 text-xs leading-none';
 
     if (diff <= -2) {
-      // Eagle: double circle (red)
+      // Eagle: double circle (red) around white number
       return (
         <span className="inline-flex items-center justify-center rounded-full border border-red-500 p-[2px]">
-          <span className={`${inner} rounded-full border border-red-500 text-red-500 font-bold`}>
+          <span className={`${inner} rounded-full border border-red-500 text-white font-bold`}>
             {displayScore}
           </span>
         </span>
       );
     }
     if (diff === -1) {
-      // Birdie: circle (red)
+      // Birdie: circle (red) around white number
       return (
-        <span className={`${inner} rounded-full border border-red-500 text-red-500 font-bold`}>
+        <span className={`${inner} rounded-full border border-red-500 text-white font-bold`}>
           {displayScore}
         </span>
       );
     }
     if (diff === 1) {
-      // Bogey: square (orange)
+      // Bogey: square (orange) around white number
       return (
-        <span className={`${inner} border border-orange-400 text-orange-400`}>
+        <span className={`${inner} border border-orange-400 text-white`}>
           {displayScore}
         </span>
       );
     }
     if (diff >= 2) {
-      // Double bogey+: double square (orange)
+      // Double bogey+: double square (orange) around white number
       return (
         <span className="inline-flex items-center justify-center border border-orange-400 p-[2px]">
-          <span className={`${inner} border border-orange-400 text-orange-400`}>
+          <span className={`${inner} border border-orange-400 text-white`}>
             {displayScore}
           </span>
         </span>
