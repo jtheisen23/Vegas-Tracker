@@ -1,5 +1,6 @@
 import { Player, HoleSetup, Match, MatchResult } from '../types';
 import { getNetScore } from './scoring';
+import { computePerformances, findMVP, formatDifferential } from './performance';
 
 export interface RoundExportData {
   courseName: string;
@@ -54,32 +55,29 @@ export function formatRoundSummary(data: RoundExportData): string {
   });
   L.push('');
 
+  // ---- Performance analysis ----
+  const performances = computePerformances(players, holes, scores);
+  const mvp = findMVP(performances);
+  const perfById = new Map(performances.map((pp) => [pp.playerId, pp]));
+
+  // ---- MVP ----
+  if (mvp && mvp.holesPlayed > 0) {
+    L.push('ROUND MVP');
+    L.push('-'.repeat(30));
+    L.push(
+      `${mvp.name}  (Grade ${mvp.grade})  ${mvp.holesWon} won / ${mvp.holesTied} tied / ${formatDifferential(
+        mvp.differential
+      )} vs hcp`
+    );
+    L.push('');
+  }
+
   // ---- Holes won / tied ----
-  const holesWon = new Map<string, number>();
-  const holesTied = new Map<string, number>();
-  players.forEach((p) => {
-    holesWon.set(p.id, 0);
-    holesTied.set(p.id, 0);
-  });
-  holes.forEach((hole) => {
-    const entries = players
-      .map((p) => ({ id: p.id, score: scores[p.id]?.[hole.number] }))
-      .filter((e): e is { id: string; score: number } => e.score != null);
-    if (entries.length === 0) return;
-    const min = Math.min(...entries.map((e) => e.score));
-    const leaders = entries.filter((e) => e.score === min);
-    if (leaders.length === 1) {
-      holesWon.set(leaders[0].id, (holesWon.get(leaders[0].id) || 0) + 1);
-    } else {
-      leaders.forEach(({ id }) => holesTied.set(id, (holesTied.get(id) || 0) + 1));
-    }
-  });
   const holesWonRanks = players
-    .map((p) => ({
-      name: p.name,
-      won: holesWon.get(p.id) || 0,
-      tied: holesTied.get(p.id) || 0,
-    }))
+    .map((p) => {
+      const perf = perfById.get(p.id)!;
+      return { name: p.name, won: perf.holesWon, tied: perf.holesTied };
+    })
     .sort((a, b) => b.won - a.won || b.tied - a.tied);
   L.push('HOLES WON (Low Gross)');
   L.push('-'.repeat(30));
@@ -119,6 +117,36 @@ export function formatRoundSummary(data: RoundExportData): string {
     });
     L.push('');
   }
+
+  // ---- Performance Grades ----
+  const gradeRanks = [...performances].sort((a, b) => b.differential - a.differential);
+  L.push('PERFORMANCE GRADES (Score vs Handicap)');
+  L.push('-'.repeat(30));
+  L.push(
+    `${padRight('', 3)}${padRight('Player', nameWidth)} ${padLeft('Grd', 4)} ${padLeft(
+      'Hcp',
+      4
+    )} ${padLeft('+/-', 5)} ${padLeft('vs Hcp', 7)}`
+  );
+  gradeRanks.forEach((perf, i) => {
+    const player = players.find((p) => p.id === perf.playerId)!;
+    const scoreStr =
+      perf.holesPlayed === 0
+        ? '-'
+        : perf.scoreToPar === 0
+        ? 'E'
+        : perf.scoreToPar > 0
+        ? `+${perf.scoreToPar}`
+        : String(perf.scoreToPar);
+    L.push(
+      `${i + 1}. ${padRight(perf.name, nameWidth)} ${padLeft(perf.grade, 4)} ${padLeft(
+        player.handicap,
+        4
+      )} ${padLeft(scoreStr, 5)} ${padLeft(formatDifferential(perf.differential), 7)}`
+    );
+  });
+  L.push('Grade: A>=+3, B>=0, C>=-3, D>=-6, F<-6 vs handicap.');
+  L.push('');
 
   // ---- Scorecard ----
   const frontNine = holes.filter((h) => h.number <= 9);

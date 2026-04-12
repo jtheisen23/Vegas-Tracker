@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { RoundExportData } from '../utils/export';
 import { getNetScore } from '../utils/scoring';
+import { computePerformances, findMVP, formatDifferential, gradeColor } from '../utils/performance';
 
 interface Props {
   data: RoundExportData;
@@ -24,33 +25,19 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
     .map((p) => ({ player: p, money: playerMoney.get(p.id) || 0 }))
     .sort((a, b) => b.money - a.money);
 
-  // Holes won (sole lowest) vs tied (shared lowest)
-  const holesWon = new Map<string, number>();
-  const holesTied = new Map<string, number>();
-  players.forEach((p) => {
-    holesWon.set(p.id, 0);
-    holesTied.set(p.id, 0);
-  });
-  holes.forEach((hole) => {
-    const entries = players
-      .map((p) => ({ id: p.id, score: scores[p.id]?.[hole.number] }))
-      .filter((e): e is { id: string; score: number } => e.score != null);
-    if (entries.length === 0) return;
-    const min = Math.min(...entries.map((e) => e.score));
-    const leaders = entries.filter((e) => e.score === min);
-    if (leaders.length === 1) {
-      holesWon.set(leaders[0].id, (holesWon.get(leaders[0].id) || 0) + 1);
-    } else {
-      leaders.forEach(({ id }) => holesTied.set(id, (holesTied.get(id) || 0) + 1));
-    }
-  });
+  // Performance (wins, ties, grades, MVP)
+  const performances = computePerformances(players, holes, scores);
+  const perfById = new Map(performances.map((pp) => [pp.playerId, pp]));
+  const mvp = findMVP(performances);
   const holesWonRanks = players
-    .map((p) => ({
-      player: p,
-      won: holesWon.get(p.id) || 0,
-      tied: holesTied.get(p.id) || 0,
-    }))
+    .map((p) => {
+      const perf = perfById.get(p.id)!;
+      return { player: p, won: perf.holesWon, tied: perf.holesTied };
+    })
     .sort((a, b) => b.won - a.won || b.tied - a.tied);
+  const gradeRanks = players
+    .map((p) => ({ player: p, perf: perfById.get(p.id)! }))
+    .sort((a, b) => b.perf.differential - a.perf.differential);
 
   // Partnerships
   const partnerMap = new Map<string, { ids: [string, string]; points: number }>();
@@ -328,6 +315,60 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
         </div>
       </div>
 
+      {/* Round MVP */}
+      {mvp && mvp.holesPlayed > 0 && (
+        <div
+          style={{
+            marginBottom: 18,
+            padding: 12,
+            border: `2px solid ${colors.gold}`,
+            borderRadius: 6,
+            backgroundColor: '#fffbeb',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          <div style={{ fontSize: 28 }}>👑</div>
+          <div style={{ flex: 1 }}>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: colors.gold,
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+              }}
+            >
+              Round MVP
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>{mvp.name}</div>
+            <div style={{ fontSize: 11, color: colors.muted }}>
+              {mvp.holesWon} won · {mvp.holesTied} tied ·{' '}
+              <span style={{ color: mvp.differential >= 0 ? colors.red : colors.orange, fontWeight: 600 }}>
+                {formatDifferential(mvp.differential)} vs handicap
+              </span>
+            </div>
+          </div>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 999,
+              backgroundColor: gradeColor(mvp.grade),
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 22,
+              fontWeight: 900,
+            }}
+          >
+            {mvp.grade}
+          </div>
+        </div>
+      )}
+
       {section(
         'MONEY LEADERBOARD',
         <div>
@@ -379,6 +420,73 @@ const PrintableSummary = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
             )}
           </div>
         )}
+
+      {section(
+        'PERFORMANCE GRADES',
+        <div>
+          {gradeRanks.map(({ player, perf }) => {
+            const scoreStr =
+              perf.holesPlayed === 0
+                ? '-'
+                : perf.scoreToPar === 0
+                ? 'E'
+                : perf.scoreToPar > 0
+                ? `+${perf.scoreToPar}`
+                : String(perf.scoreToPar);
+            return (
+              <div
+                key={player.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '6px 10px',
+                  backgroundColor: colors.lightBg,
+                  borderRadius: 4,
+                  marginBottom: 4,
+                  fontSize: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 999,
+                      backgroundColor: gradeColor(perf.grade),
+                      color: '#ffffff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {perf.grade}
+                  </span>
+                  <span style={{ fontWeight: 500 }}>{player.name}</span>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 10, color: colors.muted }}>
+                    Hcp {player.handicap} · Shot {scoreStr}
+                  </div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      color: perf.differential >= 0 ? colors.red : colors.orange,
+                    }}
+                  >
+                    {formatDifferential(perf.differential)} vs hcp
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ fontSize: 9, color: colors.muted, marginTop: 4 }}>
+            Grade: A ≥ +3, B ≥ 0, C ≥ -3, D ≥ -6, F &lt; -6 vs handicap.
+          </div>
+        </div>
+      )}
 
       {section(
         'SCORECARD',

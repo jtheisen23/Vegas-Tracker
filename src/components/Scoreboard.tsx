@@ -1,5 +1,6 @@
 import { Player, Match, Multiplier, HoleSetup, MatchResult } from '../types';
 import ShareMenu from './ShareMenu';
+import { computePerformances, findMVP, formatDifferential } from '../utils/performance';
 
 interface Props {
   players: Player[];
@@ -39,35 +40,27 @@ export default function Scoreboard({
     .map((p) => ({ player: p, money: getPlayerMoney(p.id) }))
     .sort((a, b) => b.money - a.money);
 
-  // Holes won: sole lowest gross on a hole. Holes tied: tied for the lowest with ≥1 other player.
-  const holesWonMap = new Map<string, number>();
-  const holesTiedMap = new Map<string, number>();
-  players.forEach((p) => {
-    holesWonMap.set(p.id, 0);
-    holesTiedMap.set(p.id, 0);
-  });
-  holes.forEach((hole) => {
-    const entries = players
-      .map((p) => ({ id: p.id, score: scores[p.id]?.[hole.number] }))
-      .filter((e): e is { id: string; score: number } => e.score != null);
-    if (entries.length === 0) return;
-    const minScore = Math.min(...entries.map((e) => e.score));
-    const leaders = entries.filter((e) => e.score === minScore);
-    if (leaders.length === 1) {
-      holesWonMap.set(leaders[0].id, (holesWonMap.get(leaders[0].id) || 0) + 1);
-    } else {
-      leaders.forEach(({ id }) => {
-        holesTiedMap.set(id, (holesTiedMap.get(id) || 0) + 1);
-      });
-    }
-  });
+  // Performance analysis (holes won/tied + grades + MVP)
+  const performances = computePerformances(players, holes, scores);
+  const mvp = findMVP(performances);
+  const perfById = new Map(performances.map((p) => [p.playerId, p]));
   const holesWonRankings = players
-    .map((p) => ({
-      player: p,
-      won: holesWonMap.get(p.id) || 0,
-      tied: holesTiedMap.get(p.id) || 0,
-    }))
+    .map((p) => {
+      const perf = perfById.get(p.id)!;
+      return { player: p, won: perf.holesWon, tied: perf.holesTied };
+    })
     .sort((a, b) => b.won - a.won || b.tied - a.tied);
+  const gradeRankings = players
+    .map((p) => ({ player: p, perf: perfById.get(p.id)! }))
+    .sort((a, b) => b.perf.differential - a.perf.differential);
+
+  const gradeBg: Record<string, string> = {
+    A: 'bg-yellow-500 text-black',
+    B: 'bg-green-600 text-white',
+    C: 'bg-blue-600 text-white',
+    D: 'bg-orange-600 text-white',
+    F: 'bg-red-700 text-white',
+  };
 
   // Partnerships: combine each unique pair's points across all matches
   const partnershipMap = new Map<string, { ids: [string, string]; points: number }>();
@@ -109,6 +102,34 @@ export default function Scoreboard({
             Round Summary
           </h2>
         </div>
+
+        {/* Round MVP */}
+        {mvp && mvp.holesPlayed > 0 && (
+          <div className="mb-4 bg-gradient-to-r from-yellow-600/30 to-yellow-900/30 border border-yellow-600 rounded-xl p-3">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">👑</span>
+              <div className="flex-1">
+                <div className="text-[10px] text-yellow-400 font-semibold uppercase tracking-widest">
+                  Round MVP
+                </div>
+                <div className="text-white text-lg font-bold">{mvp.name}</div>
+                <div className="text-[11px] text-neutral-300">
+                  {mvp.holesWon} won · {mvp.holesTied} tied ·{' '}
+                  <span className={mvp.differential >= 0 ? 'text-green-400' : 'text-orange-400'}>
+                    {formatDifferential(mvp.differential)} vs handicap
+                  </span>
+                </div>
+              </div>
+              <span
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xl ${
+                  gradeBg[mvp.grade]
+                }`}
+              >
+                {mvp.grade}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Money Ranking */}
         <div className="mb-4">
@@ -170,7 +191,7 @@ export default function Scoreboard({
 
         {/* Partnership Rankings */}
         {partnershipRankings.length > 0 && (
-          <div>
+          <div className="mb-4">
             <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
               Best Partnerships
             </h3>
@@ -199,6 +220,51 @@ export default function Scoreboard({
             </div>
           </div>
         )}
+
+        {/* Performance Grades */}
+        <div>
+          <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wide mb-2">
+            Performance Grades
+          </h3>
+          <div className="space-y-1.5">
+            {gradeRankings.map(({ player, perf }) => (
+              <div key={player.id} className="flex items-center justify-between bg-neutral-800/60 rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-7 h-7 rounded-full flex items-center justify-center font-black text-sm ${
+                      gradeBg[perf.grade]
+                    }`}
+                  >
+                    {perf.grade}
+                  </span>
+                  <span className="text-white text-sm font-medium">{player.name}</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-neutral-400">
+                    Hcp {player.handicap} · Shot{' '}
+                    {perf.holesPlayed > 0
+                      ? perf.scoreToPar === 0
+                        ? 'E'
+                        : perf.scoreToPar > 0
+                        ? `+${perf.scoreToPar}`
+                        : perf.scoreToPar
+                      : '-'}
+                  </div>
+                  <div
+                    className={`text-sm font-bold ${
+                      perf.differential >= 0 ? 'text-green-400' : 'text-orange-400'
+                    }`}
+                  >
+                    {formatDifferential(perf.differential)} vs hcp
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-neutral-500 mt-1">
+            Grade based on score vs handicap. A ≥ +3, B ≥ 0, C ≥ -3, D ≥ -6, F &lt; -6.
+          </p>
+        </div>
       </div>
 
       {/* Match Details */}
