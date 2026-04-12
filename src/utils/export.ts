@@ -228,3 +228,75 @@ export async function copySummary(summary: string): Promise<boolean> {
   }
   return false;
 }
+
+// ---- PDF generation ----
+
+export async function generatePDFBlob(element: HTMLElement): Promise<Blob> {
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import('html2canvas-pro'),
+    import('jspdf'),
+  ]);
+
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    logging: false,
+  });
+
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pdfWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+  let heightLeft = imgHeight;
+  let position = 0;
+  pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+  heightLeft -= pdfHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
+  }
+
+  return pdf.output('blob');
+}
+
+export async function sharePDF(
+  blob: Blob,
+  filename: string,
+  title: string
+): Promise<'shared' | 'downloaded'> {
+  const file = new File([blob], filename, { type: 'application/pdf' });
+
+  // Try native share with file
+  if (
+    typeof navigator !== 'undefined' &&
+    'share' in navigator &&
+    'canShare' in navigator &&
+    (navigator as any).canShare({ files: [file] })
+  ) {
+    try {
+      await (navigator as any).share({ files: [file], title });
+      return 'shared';
+    } catch {
+      // user cancelled — fall through to download
+    }
+  }
+
+  // Fallback: download the file
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return 'downloaded';
+}
