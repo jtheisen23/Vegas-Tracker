@@ -18,14 +18,8 @@ export default function Scorecard({ players, holes, scores, courseName, onBack }
   const frontNine = holes.filter((h) => h.number <= 9);
   const backNine = holes.filter((h) => h.number > 9);
 
-  const getScoreClass = (score: number | undefined, par: number) => {
-    if (score == null) return 'text-neutral-600';
-    const diff = score - par;
-    if (diff <= -2) return 'text-yellow-400 font-bold';
-    if (diff === -1) return 'text-red-500 font-bold';
-    if (diff === 0) return 'text-white';
-    if (diff === 1) return 'text-orange-400';
-    return 'text-neutral-400';
+  const getPlayerGrossForHole = (playerId: string, holeNumber: number): number | undefined => {
+    return scores[playerId]?.[holeNumber];
   };
 
   const getPlayerScoreForHole = (playerId: string, holeNumber: number): number | undefined => {
@@ -37,6 +31,63 @@ export default function Scorecard({ players, holes, scores, courseName, onBack }
     const player = players.find((p) => p.id === playerId);
     if (!player) return gross;
     return getNetScore(gross, player.strokesReceived, hole.handicapRating);
+  };
+
+  // Decorations are based on NATURAL (gross) score vs par.
+  // Birdie = circle, Eagle = double circle, Bogey = square, Double bogey+ = double square.
+  const renderScoreCell = (
+    displayScore: number | undefined,
+    gross: number | undefined,
+    par: number
+  ) => {
+    if (displayScore == null) {
+      return <span className="text-neutral-600">-</span>;
+    }
+    if (gross == null) {
+      return <span className="text-white">{displayScore}</span>;
+    }
+    const diff = gross - par;
+
+    const inner = 'inline-flex items-center justify-center w-6 h-6 text-xs leading-none';
+
+    if (diff <= -2) {
+      // Eagle: double circle (red)
+      return (
+        <span className="inline-flex items-center justify-center rounded-full border border-red-500 p-[2px]">
+          <span className={`${inner} rounded-full border border-red-500 text-red-500 font-bold`}>
+            {displayScore}
+          </span>
+        </span>
+      );
+    }
+    if (diff === -1) {
+      // Birdie: circle (red)
+      return (
+        <span className={`${inner} rounded-full border border-red-500 text-red-500 font-bold`}>
+          {displayScore}
+        </span>
+      );
+    }
+    if (diff === 1) {
+      // Bogey: square (orange)
+      return (
+        <span className={`${inner} border border-orange-400 text-orange-400`}>
+          {displayScore}
+        </span>
+      );
+    }
+    if (diff >= 2) {
+      // Double bogey+: double square (orange)
+      return (
+        <span className="inline-flex items-center justify-center border border-orange-400 p-[2px]">
+          <span className={`${inner} border border-orange-400 text-orange-400`}>
+            {displayScore}
+          </span>
+        </span>
+      );
+    }
+    // Par
+    return <span className={`${inner} text-white`}>{displayScore}</span>;
   };
 
   const sumForHoles = (playerId: string, holeList: HoleSetup[]): number => {
@@ -58,7 +109,7 @@ export default function Scorecard({ players, holes, scores, courseName, onBack }
           <tr className="text-neutral-400">
             <th className="text-left sticky left-0 bg-neutral-900 pr-2 py-1 font-semibold">Hole</th>
             {holeList.map((h) => (
-              <th key={h.number} className="px-1 py-1 font-semibold text-center min-w-[24px]">
+              <th key={h.number} className="px-1 py-1 font-semibold text-center min-w-[32px]">
                 {h.number}
               </th>
             ))}
@@ -93,12 +144,10 @@ export default function Scorecard({ players, holes, scores, courseName, onBack }
                 </td>
                 {holeList.map((h) => {
                   const score = getPlayerScoreForHole(player.id, h.number);
+                  const gross = getPlayerGrossForHole(player.id, h.number);
                   return (
-                    <td
-                      key={h.number}
-                      className={`px-1 py-1.5 text-center ${getScoreClass(score, h.par)}`}
-                    >
-                      {score ?? '-'}
+                    <td key={h.number} className="px-1 py-1 text-center">
+                      {renderScoreCell(score, gross, h.par)}
                     </td>
                   );
                 })}
