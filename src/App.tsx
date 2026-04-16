@@ -75,6 +75,10 @@ function App() {
         handicapMode={round.handicapMode}
         onSetHandicapMode={round.setHandicapMode}
         onRecalculateStrokes={round.recalculateStrokes}
+        onAutoGenerateMatches={round.autoGenerateMatches}
+        onAddMatch={round.addMatch}
+        onRemoveMatch={round.removeMatch}
+        onSetMatches={round.setMatches}
       />
     );
   }

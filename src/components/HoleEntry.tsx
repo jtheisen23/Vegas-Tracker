@@ -24,6 +24,10 @@ interface Props {
   handicapMode: HandicapMode;
   onSetHandicapMode: (mode: HandicapMode) => void;
   onRecalculateStrokes: () => void;
+  onAutoGenerateMatches: () => void;
+  onAddMatch: (team1: [string, string], team2: [string, string], rotation: number) => void;
+  onRemoveMatch: (matchId: string) => void;
+  onSetMatches: (matches: Match[]) => void;
 }
 
 export default function HoleEntry({
@@ -47,8 +51,16 @@ export default function HoleEntry({
   handicapMode,
   onSetHandicapMode,
   onRecalculateStrokes,
+  onAutoGenerateMatches,
+  onAddMatch,
+  onRemoveMatch,
+  onSetMatches,
 }: Props) {
   const [showEditPlayers, setShowEditPlayers] = useState(false);
+  const [showEditMatches, setShowEditMatches] = useState(false);
+  const [newMatchRotation, setNewMatchRotation] = useState(1);
+  const [newMatchTeam1, setNewMatchTeam1] = useState<[string, string]>(['', '']);
+  const [newMatchTeam2, setNewMatchTeam2] = useState<[string, string]>(['', '']);
   const hole = holes.find((h) => h.number === currentHole)!;
   const activeMatches = getActiveMatches();
   const rotation = getCurrentRotation();
@@ -164,6 +176,139 @@ export default function HoleEntry({
         </div>
       )}
 
+      {/* Edit Matches Modal */}
+      {showEditMatches && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center">
+          <div className="bg-neutral-900 w-full max-w-lg rounded-t-2xl p-4 pb-8 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Edit Matches</h2>
+              <button
+                onClick={() => setShowEditMatches(false)}
+                className="text-red-500 font-semibold text-sm"
+              >
+                Done
+              </button>
+            </div>
+
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => {
+                  onSetMatches([]);
+                  onAutoGenerateMatches();
+                }}
+                className="flex-1 bg-neutral-800 border border-neutral-700 text-neutral-200 py-2 rounded-lg text-sm font-semibold"
+              >
+                Auto-Generate
+              </button>
+            </div>
+
+            {[1, 2, 3].map((rot) => {
+              const rotMatches = matches.filter((m) => m.rotation === rot);
+              return (
+                <div key={rot} className="mb-4">
+                  <h3 className="text-red-500 font-semibold text-sm mb-2">
+                    Rotation {rot} (Holes {(rot - 1) * 6 + 1}-{rot * 6})
+                  </h3>
+                  {rotMatches.length === 0 && (
+                    <p className="text-neutral-500 text-xs mb-2">No matches</p>
+                  )}
+                  {rotMatches.map((match) => {
+                    const t1 = match.team1.map((id) => players.find((p) => p.id === id)?.name || '?');
+                    const t2 = match.team2.map((id) => players.find((p) => p.id === id)?.name || '?');
+                    return (
+                      <div key={match.id} className="flex items-center justify-between bg-neutral-800 rounded-lg p-2.5 mb-1.5">
+                        <span className="text-xs text-white">
+                          <span className="text-red-400">{t1.join(' & ')}</span>
+                          <span className="text-neutral-400 mx-1.5">vs</span>
+                          <span className="text-orange-300">{t2.join(' & ')}</span>
+                        </span>
+                        <button
+                          onClick={() => onRemoveMatch(match.id)}
+                          className="text-red-400 text-xs ml-2"
+                        >
+                          X
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+
+            {/* Add custom match */}
+            <div className="bg-neutral-800 rounded-xl p-3 mt-2">
+              <h3 className="text-neutral-300 font-semibold mb-2 text-sm">Add Match</h3>
+              <div className="mb-2">
+                <label className="text-xs text-neutral-500">Rotation</label>
+                <select
+                  value={newMatchRotation}
+                  onChange={(e) => setNewMatchRotation(parseInt(e.target.value))}
+                  className="w-full bg-neutral-700 text-white rounded px-2 py-1 text-sm border border-neutral-600"
+                >
+                  <option value={1}>1 (Holes 1-6)</option>
+                  <option value={2}>2 (Holes 7-12)</option>
+                  <option value={3}>3 (Holes 13-18)</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-2">
+                <div>
+                  <label className="text-xs text-red-400">Team 1</label>
+                  {[0, 1].map((i) => (
+                    <select
+                      key={i}
+                      value={newMatchTeam1[i]}
+                      onChange={(e) => {
+                        const updated = [...newMatchTeam1] as [string, string];
+                        updated[i] = e.target.value;
+                        setNewMatchTeam1(updated);
+                      }}
+                      className="w-full bg-neutral-700 text-white rounded px-2 py-1 text-sm border border-neutral-600 mb-1"
+                    >
+                      <option value="">Select</option>
+                      {players.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name || `Player ${players.indexOf(p) + 1}`}</option>
+                      ))}
+                    </select>
+                  ))}
+                </div>
+                <div>
+                  <label className="text-xs text-orange-400">Team 2</label>
+                  {[0, 1].map((i) => (
+                    <select
+                      key={i}
+                      value={newMatchTeam2[i]}
+                      onChange={(e) => {
+                        const updated = [...newMatchTeam2] as [string, string];
+                        updated[i] = e.target.value;
+                        setNewMatchTeam2(updated);
+                      }}
+                      className="w-full bg-neutral-700 text-white rounded px-2 py-1 text-sm border border-neutral-600 mb-1"
+                    >
+                      <option value="">Select</option>
+                      {players.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name || `Player ${players.indexOf(p) + 1}`}</option>
+                      ))}
+                    </select>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (newMatchTeam1[0] && newMatchTeam1[1] && newMatchTeam2[0] && newMatchTeam2[1]) {
+                    onAddMatch(newMatchTeam1, newMatchTeam2, newMatchRotation);
+                    setNewMatchTeam1(['', '']);
+                    setNewMatchTeam2(['', '']);
+                  }
+                }}
+                className="w-full bg-neutral-700 text-white py-2 rounded-lg text-sm"
+              >
+                Add Match
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -181,7 +326,13 @@ export default function HoleEntry({
           </button>
         </div>
         <h1 className="text-xl font-bold text-red-500">Hole {currentHole}</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowEditMatches(true)}
+            className="text-yellow-400 text-sm font-medium"
+          >
+            Teams
+          </button>
           <button
             onClick={() => setShowEditPlayers(true)}
             className="text-yellow-400 text-sm font-medium"
