@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { sync } from './sync';
-import type { Tournament, TourGroup, TourHole, TourPlayer, TournamentFormat } from './types';
+import { nextDateForDay } from './dateUtils';
+import type { PlayDay, Tournament, TourGroup, TourHole, TourPlayer, TournamentFormat } from './types';
 
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
@@ -20,15 +21,19 @@ export function defaultHoles(): TourHole[] {
 export function createTournament(input: {
   name: string;
   courseName: string;
+  playDay?: PlayDay;
+  date?: string;
   format?: TournamentFormat;
   handicapAllowance?: number;
 }): Tournament {
   const now = new Date().toISOString();
+  const date = input.date || (input.playDay ? nextDateForDay(input.playDay) : now.slice(0, 10));
   return {
     id: generateId(),
     name: input.name,
     courseName: input.courseName,
-    date: now.slice(0, 10),
+    date,
+    playDay: input.playDay,
     holes: defaultHoles(),
     players: {},
     groups: [],
@@ -176,7 +181,7 @@ export function useTournament(eventId: string | null) {
   );
 
   const updateMeta = useCallback(
-    (patch: Partial<Pick<Tournament, 'name' | 'courseName' | 'date' | 'format' | 'handicapAllowance'>>) => {
+    (patch: Partial<Pick<Tournament, 'name' | 'courseName' | 'date' | 'format' | 'handicapAllowance' | 'playDay'>>) => {
       mutate((t) => ({ ...t, ...patch }));
     },
     [mutate],

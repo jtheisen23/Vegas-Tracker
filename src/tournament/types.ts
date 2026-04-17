@@ -23,11 +23,14 @@ export interface TourGroup {
 
 export type TournamentFormat = 'stroke' | 'stableford' | 'both';
 
+export type PlayDay = 'friday' | 'sunday';
+
 export interface Tournament {
   id: string;
   name: string;
   courseName: string;
-  date: string; // ISO date
+  date: string; // ISO date (YYYY-MM-DD)
+  playDay?: PlayDay; // optional weekly tag: friday/sunday play
   holes: TourHole[];
   players: Record<string, TourPlayer>;
   groups: TourGroup[];

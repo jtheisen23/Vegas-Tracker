@@ -38,6 +38,8 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
     return (
       <EventsList
         onOpenEvent={(id) => onNavigate(`#/t/${id}`)}
+        onOpenRegistration={(id) => onNavigate(`#/t/${id}/register`)}
+        onOpenLeaderboard={(id) => onNavigate(`#/t/${id}/leaderboard`)}
         onExit={onExit}
       />
     );

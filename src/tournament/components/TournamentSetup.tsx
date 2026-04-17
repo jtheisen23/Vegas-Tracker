@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { fetchGhinIndex, applyAllowance, courseHandicap } from '../ghin';
 import { generateId } from '../useTournament';
 import { randomizeGroups } from '../randomize';
-import type { Tournament, TourGroup, TourPlayer } from '../types';
+import { PLAY_DAYS, PLAY_DAY_LABELS, nextDateForDay } from '../dateUtils';
+import type { PlayDay, Tournament, TourGroup, TourPlayer } from '../types';
 
 interface Props {
   tournament: Tournament;
@@ -14,7 +15,7 @@ interface Props {
   onRemoveGroup: (id: string) => void;
   onSetGroups: (groups: TourGroup[]) => void;
   onUpdateHole: (n: number, patch: { par?: number; handicapRating?: number }) => void;
-  onUpdateMeta: (patch: Partial<Pick<Tournament, 'name' | 'courseName' | 'date' | 'format' | 'handicapAllowance'>>) => void;
+  onUpdateMeta: (patch: Partial<Pick<Tournament, 'name' | 'courseName' | 'date' | 'format' | 'handicapAllowance' | 'playDay'>>) => void;
   onStart: () => void;
 }
 
@@ -141,6 +142,39 @@ export default function TournamentSetup({
               onChange={(e) => onUpdateMeta({ date: e.target.value })}
               className="input"
             />
+          </Field>
+          <Field label="Weekly play day">
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => onUpdateMeta({ playDay: undefined })}
+                className={`flex-1 py-2 rounded text-sm font-semibold ${
+                  !tournament.playDay
+                    ? 'bg-neutral-700 text-white'
+                    : 'bg-neutral-900 text-neutral-400'
+                }`}
+              >
+                One-off
+              </button>
+              {PLAY_DAYS.map((d: PlayDay) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() =>
+                    onUpdateMeta({ playDay: d, date: nextDateForDay(d) })
+                  }
+                  className={`flex-1 py-2 rounded text-sm font-semibold ${
+                    tournament.playDay === d
+                      ? d === 'friday'
+                        ? 'bg-sky-600 text-white'
+                        : 'bg-amber-600 text-white'
+                      : 'bg-neutral-900 text-neutral-400'
+                  }`}
+                >
+                  {PLAY_DAY_LABELS[d]}
+                </button>
+              ))}
+            </div>
           </Field>
           <Field label="Format">
             <select

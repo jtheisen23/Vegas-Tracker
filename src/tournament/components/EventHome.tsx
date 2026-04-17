@@ -1,5 +1,6 @@
 import type { Tournament, TourGroup } from '../types';
 import { randomizeGroups } from '../randomize';
+import { PLAY_DAY_LABELS, formatPlayDate } from '../dateUtils';
 
 interface Props {
   tournament: Tournament;
@@ -61,10 +62,25 @@ export default function EventHome({
       </header>
 
       <div className="mb-6">
-        <div className="text-xs text-neutral-500 uppercase tracking-widest">Tournament</div>
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-neutral-500 uppercase tracking-widest">
+            {tournament.playDay ? `${PLAY_DAY_LABELS[tournament.playDay]} play` : 'Tournament'}
+          </div>
+          {tournament.playDay && (
+            <span
+              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                tournament.playDay === 'friday'
+                  ? 'bg-sky-700 text-sky-100'
+                  : 'bg-amber-700 text-amber-100'
+              }`}
+            >
+              {PLAY_DAY_LABELS[tournament.playDay].toUpperCase()}
+            </span>
+          )}
+        </div>
         <h1 className="text-2xl font-bold">{tournament.name}</h1>
         <p className="text-sm text-neutral-400">
-          {tournament.courseName} · {tournament.date}
+          {tournament.courseName} · {formatPlayDate(tournament.date)}
         </p>
         <div className="mt-2 flex gap-3 text-xs text-neutral-500">
           <span>{totalPlayers} players</span>
