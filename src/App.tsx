@@ -1,11 +1,65 @@
+import { useEffect, useState } from 'react';
 import { useRound } from './hooks/useRound';
 import SetupScreen from './components/SetupScreen';
 import HoleEntry from './components/HoleEntry';
 import Scoreboard from './components/Scoreboard';
 import RoundHistory from './components/RoundHistory';
 import Scorecard from './components/Scorecard';
+import TournamentApp from './tournament/TournamentApp';
 
-function App() {
+function useHashRoute(): [string, (next: string) => void] {
+  const [hash, setHash] = useState(() => window.location.hash || '#/');
+  useEffect(() => {
+    const on = () => setHash(window.location.hash || '#/');
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  const navigate = (next: string) => {
+    window.location.hash = next;
+  };
+  return [hash, navigate];
+}
+
+function ModePicker({ onPick }: { onPick: (hash: string) => void }) {
+  return (
+    <div className="min-h-screen bg-black text-neutral-100 flex flex-col items-center justify-center p-6">
+      <div className="text-center mb-10">
+        <div className="text-6xl mb-2">⛳</div>
+        <h1 className="text-3xl font-bold">Golf App</h1>
+        <p className="text-sm text-neutral-400 mt-1">Pick a mode</p>
+      </div>
+
+      <div className="w-full max-w-sm space-y-3">
+        <button
+          onClick={() => onPick('#/t')}
+          className="w-full p-5 bg-emerald-700 rounded-2xl text-left active:bg-emerald-800"
+        >
+          <div className="font-bold text-lg">Tournament</div>
+          <div className="text-sm text-emerald-100/80">
+            Multiple groups, live leaderboard, handicaps
+          </div>
+        </button>
+
+        <button
+          onClick={() => onPick('#/vegas')}
+          className="w-full p-5 bg-red-700 rounded-2xl text-left active:bg-red-800"
+        >
+          <div className="font-bold text-lg">Vegas</div>
+          <div className="text-sm text-red-100/80">
+            Rotating partners game with presses
+          </div>
+        </button>
+      </div>
+
+      <p className="text-[10px] text-neutral-600 mt-10 text-center max-w-xs">
+        Tournament data syncs across tabs on this device. For true cross-device
+        live scoring, wire a real backend in <code>src/tournament/sync.ts</code>.
+      </p>
+    </div>
+  );
+}
+
+function VegasApp({ onExit }: { onExit: () => void }) {
   const round = useRound();
 
   if (round.screen === 'history') {
@@ -106,14 +160,40 @@ function App() {
         onStart={round.startRound}
         onNewGame={round.resetForNewGame}
       />
-      <button
-        onClick={() => round.setScreen('history')}
-        className="fixed bottom-4 right-4 bg-neutral-800 text-neutral-300 px-4 py-2 rounded-lg text-sm"
-      >
-        History
-      </button>
+      <div className="fixed bottom-4 right-4 flex gap-2">
+        <button
+          onClick={onExit}
+          className="bg-neutral-800 text-neutral-300 px-4 py-2 rounded-lg text-sm"
+        >
+          Exit
+        </button>
+        <button
+          onClick={() => round.setScreen('history')}
+          className="bg-neutral-800 text-neutral-300 px-4 py-2 rounded-lg text-sm"
+        >
+          History
+        </button>
+      </div>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  const [hash, navigate] = useHashRoute();
+
+  if (hash.startsWith('#/vegas')) {
+    return <VegasApp onExit={() => navigate('#/')} />;
+  }
+
+  if (hash.startsWith('#/t')) {
+    return (
+      <TournamentApp
+        route={hash}
+        onNavigate={navigate}
+        onExit={() => navigate('#/')}
+      />
+    );
+  }
+
+  return <ModePicker onPick={navigate} />;
+}
