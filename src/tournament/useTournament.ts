@@ -150,6 +150,21 @@ export function useTournament(eventId: string | null) {
     [mutate],
   );
 
+  const setGroups = useCallback(
+    (groups: TourGroup[]) => {
+      mutate((t) => {
+        // Drop scores for groups that no longer exist so we don't leak data.
+        const nextIds = new Set(groups.map((g) => g.id));
+        const scores: typeof t.scores = {};
+        Object.entries(t.scores).forEach(([gid, s]) => {
+          if (nextIds.has(gid)) scores[gid] = s;
+        });
+        return { ...t, groups, scores };
+      });
+    },
+    [mutate],
+  );
+
   const updateHole = useCallback(
     (holeNumber: number, patch: Partial<TourHole>) => {
       mutate((t) => ({
@@ -176,6 +191,7 @@ export function useTournament(eventId: string | null) {
     addGroup,
     updateGroup,
     removeGroup,
+    setGroups,
     updateHole,
     updateMeta,
   };

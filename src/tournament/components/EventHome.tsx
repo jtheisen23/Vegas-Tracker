@@ -1,9 +1,12 @@
-import type { Tournament } from '../types';
+import type { Tournament, TourGroup } from '../types';
+import { randomizeGroups } from '../randomize';
 
 interface Props {
   tournament: Tournament;
   onOpenGroup: (groupId: string) => void;
   onOpenLeaderboard: () => void;
+  onOpenRegistration: () => void;
+  onSetGroups: (groups: TourGroup[]) => void;
   onEditSetup: () => void;
   onExit: () => void;
 }
@@ -12,15 +15,28 @@ export default function EventHome({
   tournament,
   onOpenGroup,
   onOpenLeaderboard,
+  onOpenRegistration,
+  onSetGroups,
   onEditSetup,
   onExit,
 }: Props) {
-  const shareUrl = `${window.location.origin}${window.location.pathname}#/t/${tournament.id}/leaderboard`;
+  const registered = Object.values(tournament.players);
+  const handleRandomize = () => {
+    if (registered.length === 0) return;
+    const ok =
+      tournament.groups.length === 0 ||
+      confirm('Replace existing groups with a fresh random draw?');
+    if (!ok) return;
+    onSetGroups(randomizeGroups(registered, 4));
+  };
+  const base = `${window.location.origin}${window.location.pathname}`;
+  const leaderboardUrl = `${base}#/t/${tournament.id}/leaderboard`;
+  const registrationUrl = `${base}#/t/${tournament.id}/register`;
 
-  const copyShare = async () => {
+  const copy = async (url: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      alert('Leaderboard link copied');
+      await navigator.clipboard.writeText(url);
+      alert(`${label} link copied`);
     } catch {
       /* clipboard unavailable */
     }
@@ -64,16 +80,42 @@ export default function EventHome({
         View live leaderboard
       </button>
       <button
-        onClick={copyShare}
-        className="w-full py-2 bg-neutral-900 text-neutral-300 text-sm rounded-lg mb-6"
+        onClick={onOpenRegistration}
+        className="w-full py-3 bg-sky-700 text-white font-bold rounded-lg mb-2"
       >
-        Copy leaderboard link
+        Open sign-up page
       </button>
+      <div className="grid grid-cols-2 gap-2 mb-6">
+        <button
+          onClick={() => copy(registrationUrl, 'Sign-up')}
+          className="py-2 bg-neutral-900 text-neutral-300 text-xs rounded-lg"
+        >
+          Copy sign-up link
+        </button>
+        <button
+          onClick={() => copy(leaderboardUrl, 'Leaderboard')}
+          className="py-2 bg-neutral-900 text-neutral-300 text-xs rounded-lg"
+        >
+          Copy leaderboard link
+        </button>
+      </div>
 
-      <h2 className="text-xs uppercase tracking-widest text-neutral-500 mb-2">Groups</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xs uppercase tracking-widest text-neutral-500">Groups</h2>
+        {registered.length > 0 && (
+          <button
+            onClick={handleRandomize}
+            className="text-xs bg-emerald-700 text-white px-3 py-1.5 rounded font-semibold"
+          >
+            🎲 Randomize foursomes
+          </button>
+        )}
+      </div>
       {tournament.groups.length === 0 && (
         <p className="text-sm text-neutral-500">
-          No groups yet. Use Edit setup to add players and groups.
+          {registered.length === 0
+            ? 'No registrations yet. Share the sign-up link above.'
+            : `${registered.length} registered. Tap Randomize to draw foursomes.`}
         </p>
       )}
       <div className="space-y-2">

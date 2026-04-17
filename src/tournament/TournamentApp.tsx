@@ -4,6 +4,7 @@ import EventHome from './components/EventHome';
 import TournamentSetup from './components/TournamentSetup';
 import GroupScoring from './components/GroupScoring';
 import Leaderboard from './components/Leaderboard';
+import Registration from './components/Registration';
 import { sync } from './sync';
 
 interface Props {
@@ -27,7 +28,7 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
   const sectionArg = parts[2] || null;
 
   const { tournament, setScore, addPlayer, updatePlayer, removePlayer,
-    addGroup, updateGroup, removeGroup, updateHole, updateMeta } = useTournament(eventId);
+    addGroup, updateGroup, removeGroup, setGroups, updateHole, updateMeta } = useTournament(eventId);
 
   // Derived: if we have an event id but no saved data exists, we need a
   // "not found" state. Reading sync directly avoids effect-driven state.
@@ -73,9 +74,21 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
         onAddGroup={addGroup}
         onUpdateGroup={updateGroup}
         onRemoveGroup={removeGroup}
+        onSetGroups={setGroups}
         onUpdateHole={updateHole}
         onUpdateMeta={updateMeta}
         onStart={() => onNavigate(`#/t/${tournament.id}`)}
+      />
+    );
+  }
+
+  if (section === 'register') {
+    return (
+      <Registration
+        tournament={tournament}
+        onAddPlayer={addPlayer}
+        onRemovePlayer={removePlayer}
+        onBack={() => onNavigate(`#/t/${tournament.id}`)}
       />
     );
   }
@@ -101,29 +114,13 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
     );
   }
 
-  const noSetupYet = Object.keys(tournament.players).length === 0 || tournament.groups.length === 0;
-  if (noSetupYet) {
-    return (
-      <TournamentSetup
-        tournament={tournament}
-        onAddPlayer={addPlayer}
-        onUpdatePlayer={updatePlayer}
-        onRemovePlayer={removePlayer}
-        onAddGroup={addGroup}
-        onUpdateGroup={updateGroup}
-        onRemoveGroup={removeGroup}
-        onUpdateHole={updateHole}
-        onUpdateMeta={updateMeta}
-        onStart={() => onNavigate(`#/t/${tournament.id}`)}
-      />
-    );
-  }
-
   return (
     <EventHome
       tournament={tournament}
       onOpenGroup={(gid) => onNavigate(`#/t/${tournament.id}/group/${gid}`)}
       onOpenLeaderboard={() => onNavigate(`#/t/${tournament.id}/leaderboard`)}
+      onOpenRegistration={() => onNavigate(`#/t/${tournament.id}/register`)}
+      onSetGroups={setGroups}
       onEditSetup={() => onNavigate(`#/t/${tournament.id}/setup`)}
       onExit={() => onNavigate('#/t')}
     />

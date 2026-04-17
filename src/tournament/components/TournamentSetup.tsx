@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { fetchGhinIndex, applyAllowance, courseHandicap } from '../ghin';
 import { generateId } from '../useTournament';
-import type { Tournament, TourPlayer } from '../types';
+import { randomizeGroups } from '../randomize';
+import type { Tournament, TourGroup, TourPlayer } from '../types';
 
 interface Props {
   tournament: Tournament;
@@ -11,6 +12,7 @@ interface Props {
   onAddGroup: (group: { id: string; name: string; playerIds: string[]; teeTime?: string }) => void;
   onUpdateGroup: (id: string, patch: { name?: string; playerIds?: string[]; teeTime?: string }) => void;
   onRemoveGroup: (id: string) => void;
+  onSetGroups: (groups: TourGroup[]) => void;
   onUpdateHole: (n: number, patch: { par?: number; handicapRating?: number }) => void;
   onUpdateMeta: (patch: Partial<Pick<Tournament, 'name' | 'courseName' | 'date' | 'format' | 'handicapAllowance'>>) => void;
   onStart: () => void;
@@ -26,6 +28,7 @@ export default function TournamentSetup({
   onAddGroup,
   onUpdateGroup,
   onRemoveGroup,
+  onSetGroups,
   onUpdateHole,
   onUpdateMeta,
   onStart,
@@ -72,6 +75,17 @@ export default function TournamentSetup({
   const handleAddGroup = () => {
     const num = tournament.groups.length + 1;
     onAddGroup({ id: generateId(), name: `Group ${num}`, playerIds: [] });
+  };
+
+  const handleRandomize = () => {
+    if (players.length === 0) return;
+    const ok =
+      tournament.groups.length === 0 ||
+      confirm(
+        'Replace existing groups with a fresh random draw? Posted scores will stay on their current groups but unassigned groups will be removed.',
+      );
+    if (!ok) return;
+    onSetGroups(randomizeGroups(players, 4));
   };
 
   const canStart =
@@ -230,6 +244,24 @@ export default function TournamentSetup({
 
       {tab === 'groups' && (
         <section className="space-y-4">
+          <div className="bg-emerald-900/30 border border-emerald-700/40 rounded-lg p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <div className="text-sm font-semibold text-emerald-200">Random foursomes</div>
+                <div className="text-xs text-emerald-300/70">
+                  Shuffle the {players.length} registered player{players.length === 1 ? '' : 's'} into groups of 4.
+                </div>
+              </div>
+              <button
+                onClick={handleRandomize}
+                disabled={players.length === 0}
+                className="px-3 py-2 bg-emerald-600 text-white rounded font-semibold text-sm disabled:opacity-40 whitespace-nowrap"
+              >
+                Randomize
+              </button>
+            </div>
+          </div>
+
           {unassigned.length > 0 && (
             <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg p-3 text-sm">
               <strong>Unassigned:</strong>{' '}
