@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useTournament } from './useTournament';
 import EventsList from './components/EventsList';
 import EventHome from './components/EventHome';
@@ -5,7 +6,7 @@ import TournamentSetup from './components/TournamentSetup';
 import GroupScoring from './components/GroupScoring';
 import Leaderboard from './components/Leaderboard';
 import Registration from './components/Registration';
-import { sync } from './sync';
+import { syncKind } from './sync';
 
 interface Props {
   route: string;
@@ -30,9 +31,21 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
   const { tournament, setScore, addPlayer, updatePlayer, removePlayer,
     addGroup, updateGroup, removeGroup, setGroups, updateHole, updateMeta } = useTournament(eventId);
 
-  // Derived: if we have an event id but no saved data exists, we need a
-  // "not found" state. Reading sync directly avoids effect-driven state.
-  const needsCreate = !!eventId && !tournament && sync.load(eventId) == null;
+  // Grace window for Firestore to respond on a cold open. LocalSync is
+  // synchronous so any missing record is immediately known.
+  const [graceExpired, setGraceExpired] = useState(false);
+  const [waitKey, setWaitKey] = useState<string | null>(null);
+  const currentWaitKey = eventId && !tournament ? eventId : null;
+  if (waitKey !== currentWaitKey) {
+    setWaitKey(currentWaitKey);
+    setGraceExpired(false);
+  }
+  useEffect(() => {
+    if (!currentWaitKey) return;
+    const ms = syncKind === 'firebase' ? 8000 : 0;
+    const t = setTimeout(() => setGraceExpired(true), ms);
+    return () => clearTimeout(t);
+  }, [currentWaitKey]);
 
   if (!eventId) {
     return (
@@ -45,14 +58,23 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
     );
   }
 
-  if (needsCreate && !tournament) {
+  if (!tournament && !graceExpired) {
+    return (
+      <div className="min-h-screen bg-black text-neutral-100 flex flex-col items-center justify-center">
+        <div className="text-4xl mb-4 animate-pulse">⛳</div>
+        <p className="text-neutral-400 text-sm">Loading tournament…</p>
+      </div>
+    );
+  }
+
+  if (!tournament) {
     return (
       <div className="min-h-screen bg-black text-neutral-100 p-6 flex flex-col items-center justify-center">
-        <p className="text-neutral-400 mb-4">Tournament not found on this device.</p>
+        <p className="text-neutral-400 mb-4">Tournament not found.</p>
         <p className="text-neutral-500 text-sm mb-6 text-center max-w-sm">
-          Tournament data is stored locally. If someone shared a link with you, they
-          need to share the data from the same device/origin (real-time sync across
-          devices requires a backend — see <code>src/tournament/sync.ts</code>).
+          {syncKind === 'firebase'
+            ? 'The link may be invalid or the event was deleted.'
+            : 'Tournament data is stored locally. Cross-device sync needs Firebase — set VITE_FIREBASE_* env vars.'}
         </p>
         <button
           onClick={() => onNavigate('#/t')}
@@ -63,8 +85,6 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
       </div>
     );
   }
-
-  if (!tournament) return null;
 
   if (section === 'setup') {
     return (
