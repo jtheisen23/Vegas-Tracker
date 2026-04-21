@@ -62,83 +62,119 @@ function ModePicker({ onPick }: { onPick: (hash: string) => void }) {
 function VegasApp({ onExit }: { onExit: () => void }) {
   const round = useRound();
 
+  const resetVegas = () => {
+    if (!confirm('Clear all Vegas data on this device (active round + saved history)?')) return;
+    try {
+      localStorage.removeItem('vegas-golf-active-round');
+      localStorage.removeItem('vegas-golf-rounds');
+    } catch {
+      /* ignore */
+    }
+    window.location.reload();
+  };
+
+  const TopBar = () => (
+    <div className="sticky top-0 z-50 bg-black/95 backdrop-blur border-b border-neutral-800 px-3 py-2 flex items-center justify-between text-sm">
+      <button onClick={onExit} className="text-neutral-400">
+        ← Home
+      </button>
+      <span className="text-red-500 font-bold tracking-widest text-xs">VEGAS</span>
+      <button onClick={resetVegas} className="text-red-400 text-xs">
+        Reset
+      </button>
+    </div>
+  );
+
   if (round.screen === 'history') {
     return (
-      <RoundHistory
-        onBack={() => round.setScreen('setup')}
-        onEditRound={(saved) => round.loadSavedRound(saved)}
-      />
+      <>
+        <TopBar />
+        <RoundHistory
+          onBack={() => round.setScreen('setup')}
+          onEditRound={(saved) => round.loadSavedRound(saved)}
+        />
+      </>
     );
   }
 
   if (round.screen === 'scorecard') {
     return (
-      <Scorecard
-        players={round.players}
-        holes={round.holes}
-        scores={round.scores}
-        courseName={round.courseName}
-        onBack={() => round.setScreen('holes')}
-      />
+      <>
+        <TopBar />
+        <Scorecard
+          players={round.players}
+          holes={round.holes}
+          scores={round.scores}
+          courseName={round.courseName}
+          onBack={() => round.setScreen('holes')}
+        />
+      </>
     );
   }
 
   if (round.screen === 'scoreboard') {
     return (
-      <Scoreboard
-        players={round.players}
-        matches={round.matches}
-        holes={round.holes}
-        scores={round.scores}
-        courseName={round.courseName}
-        pointValue={round.pointValue}
-        getMatchTotal={round.getMatchTotal}
-        getPlayerMoney={round.getPlayerMoney}
-        getMatchResultsForHole={round.getMatchResultsForHole}
-        getMultiplier={round.getMultiplier}
-        getMultiplierValue={round.getMultiplierValue}
-        onBack={() => round.setScreen('holes')}
-        onFinish={() => {
-          round.finishRound();
-          round.setScreen('history');
-        }}
-      />
+      <>
+        <TopBar />
+        <Scoreboard
+          players={round.players}
+          matches={round.matches}
+          holes={round.holes}
+          scores={round.scores}
+          courseName={round.courseName}
+          pointValue={round.pointValue}
+          getMatchTotal={round.getMatchTotal}
+          getPlayerMoney={round.getPlayerMoney}
+          getMatchResultsForHole={round.getMatchResultsForHole}
+          getMultiplier={round.getMultiplier}
+          getMultiplierValue={round.getMultiplierValue}
+          onBack={() => round.setScreen('holes')}
+          onFinish={() => {
+            round.finishRound();
+            round.setScreen('history');
+          }}
+        />
+      </>
     );
   }
 
   if (round.screen === 'holes') {
     return (
-      <HoleEntry
-        players={round.players}
-        holes={round.holes}
-        matches={round.matches}
-        scores={round.scores}
-        currentHole={round.currentHole}
-        onSetCurrentHole={round.setCurrentHole}
-        onSetScore={round.setScore}
-        onClearScore={round.clearScore}
-        onShowScoreboard={() => round.setScreen('scoreboard')}
-        onShowScorecard={() => round.setScreen('scorecard')}
-        getMatchResultsForHole={round.getMatchResultsForHole}
-        getActiveMatches={round.getActiveMatches}
-        getCurrentRotation={round.getCurrentRotation}
-        getMultiplier={round.getMultiplier}
-        getMultiplierValue={round.getMultiplierValue}
-        onSetMultiplier={round.setMatchMultiplier}
-        onUpdatePlayer={round.updatePlayer}
-        handicapMode={round.handicapMode}
-        onSetHandicapMode={round.setHandicapMode}
-        onRecalculateStrokes={round.recalculateStrokes}
-        onAutoGenerateMatches={round.autoGenerateMatches}
-        onAddMatch={round.addMatch}
-        onRemoveMatch={round.removeMatch}
-        onSetMatches={round.setMatches}
-      />
+      <>
+        <TopBar />
+        <HoleEntry
+          players={round.players}
+          holes={round.holes}
+          matches={round.matches}
+          scores={round.scores}
+          currentHole={round.currentHole}
+          onSetCurrentHole={round.setCurrentHole}
+          onSetScore={round.setScore}
+          onClearScore={round.clearScore}
+          onShowScoreboard={() => round.setScreen('scoreboard')}
+          onShowScorecard={() => round.setScreen('scorecard')}
+          getMatchResultsForHole={round.getMatchResultsForHole}
+          getActiveMatches={round.getActiveMatches}
+          getCurrentRotation={round.getCurrentRotation}
+          getMultiplier={round.getMultiplier}
+          getMultiplierValue={round.getMultiplierValue}
+          onSetMultiplier={round.setMatchMultiplier}
+          onUpdatePlayer={round.updatePlayer}
+          handicapMode={round.handicapMode}
+          onSetHandicapMode={round.setHandicapMode}
+          onRecalculateStrokes={round.recalculateStrokes}
+          onAutoGenerateMatches={round.autoGenerateMatches}
+          onAddMatch={round.addMatch}
+          onRemoveMatch={round.removeMatch}
+          onSetMatches={round.setMatches}
+        />
+      </>
     );
   }
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen bg-black text-neutral-100">
+      <TopBar />
       <SetupScreen
         players={round.players}
         holes={round.holes}
@@ -161,12 +197,6 @@ function VegasApp({ onExit }: { onExit: () => void }) {
         onNewGame={round.resetForNewGame}
       />
       <div className="fixed bottom-4 right-4 flex gap-2">
-        <button
-          onClick={onExit}
-          className="bg-neutral-800 text-neutral-300 px-4 py-2 rounded-lg text-sm"
-        >
-          Exit
-        </button>
         <button
           onClick={() => round.setScreen('history')}
           className="bg-neutral-800 text-neutral-300 px-4 py-2 rounded-lg text-sm"
