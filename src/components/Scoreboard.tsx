@@ -251,7 +251,7 @@ export default function Scoreboard({
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-neutral-400">
-                    Hcp {player.handicap} · Shot{' '}
+                    Idx {player.handicap} · CH {Math.round(player.handicap)} · Shot{' '}
                     {perf.holesPlayed > 0
                       ? perf.scoreToPar === 0
                         ? 'E'
