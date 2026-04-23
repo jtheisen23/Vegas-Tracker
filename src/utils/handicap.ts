@@ -9,13 +9,14 @@ export function calculateStrokesReceived(players: Player[], mode: HandicapMode =
   if (mode === 'full') {
     return players.map((p) => ({
       ...p,
-      strokesReceived: p.handicap,
+      // Strokes are applied per hole by integer stroke index, so round.
+      strokesReceived: Math.round(p.handicap),
     }));
   }
   const minHandicap = Math.min(...players.map((p) => p.handicap));
   return players.map((p) => ({
     ...p,
-    strokesReceived: p.handicap - minHandicap,
+    strokesReceived: Math.round(p.handicap - minHandicap),
   }));
 }
 
