@@ -1,22 +1,44 @@
 import { Player, HandicapMode } from '../types';
 
 /**
+ * Course constants for the hardcoded Geneva Golf Club setup.
+ * If the default course is ever changed, update these alongside the
+ * pars/stroke indexes in hooks/useRound.ts.
+ */
+export const COURSE_RATING = 70;
+export const COURSE_SLOPE = 132;
+export const COURSE_PAR = 68;
+
+/**
+ * Convert a Handicap Index to a Course Handicap using the standard formula:
+ *   CH = round(Index × (Slope / 113) + (Rating − Par))
+ */
+export function toCourseHandicap(
+  index: number,
+  slope: number = COURSE_SLOPE,
+  rating: number = COURSE_RATING,
+  par: number = COURSE_PAR,
+): number {
+  return Math.round(index * (slope / 113) + (rating - par));
+}
+
+/**
  * Calculate strokes received for each player.
- * 'off-the-low': strokes = handicap - lowest handicap in group
- * 'full': strokes = full handicap value
+ * 'off-the-low': strokes = courseHandicap - lowest courseHandicap in group
+ * 'full': strokes = full courseHandicap
  */
 export function calculateStrokesReceived(players: Player[], mode: HandicapMode = 'off-the-low'): Player[] {
+  const courseHdcps = players.map((p) => toCourseHandicap(p.handicap));
   if (mode === 'full') {
-    return players.map((p) => ({
+    return players.map((p, i) => ({
       ...p,
-      // Strokes are applied per hole by integer stroke index, so round.
-      strokesReceived: Math.round(p.handicap),
+      strokesReceived: courseHdcps[i],
     }));
   }
-  const minHandicap = Math.min(...players.map((p) => p.handicap));
-  return players.map((p) => ({
+  const minCH = Math.min(...courseHdcps);
+  return players.map((p, i) => ({
     ...p,
-    strokesReceived: Math.round(p.handicap - minHandicap),
+    strokesReceived: courseHdcps[i] - minCH,
   }));
 }
 

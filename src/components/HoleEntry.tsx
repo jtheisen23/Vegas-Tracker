@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Player, Match, HoleSetup, Multiplier, HandicapMode } from '../types';
 import { getNetScore } from '../utils/scoring';
-import { getStrokesOnHole } from '../utils/handicap';
+import { getStrokesOnHole, toCourseHandicap } from '../utils/handicap';
 
 interface Props {
   players: Player[];
@@ -123,7 +123,7 @@ export default function HoleEntry({
                     <label className="text-xs text-neutral-400 mb-1 block flex items-center justify-between">
                       <span>Index</span>
                       <span className="text-neutral-500">
-                        CH {Math.round(player.handicap || 0)}
+                        CH {toCourseHandicap(player.handicap || 0)}
                       </span>
                     </label>
                     <input

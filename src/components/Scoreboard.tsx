@@ -1,6 +1,7 @@
 import { Player, Match, Multiplier, HoleSetup, MatchResult } from '../types';
 import ShareMenu from './ShareMenu';
 import { computePerformances, findMVP, formatDifferential } from '../utils/performance';
+import { toCourseHandicap } from '../utils/handicap';
 
 interface Props {
   players: Player[];
@@ -251,7 +252,7 @@ export default function Scoreboard({
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-neutral-400">
-                    Idx {player.handicap} · CH {Math.round(player.handicap)} · Shot{' '}
+                    Idx {player.handicap} · CH {toCourseHandicap(player.handicap)} · Shot{' '}
                     {perf.holesPlayed > 0
                       ? perf.scoreToPar === 0
                         ? 'E'
