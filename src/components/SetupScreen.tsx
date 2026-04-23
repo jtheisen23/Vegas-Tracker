@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Player, Match, HoleSetup, HandicapMode } from '../types';
+import { toCourseHandicap } from '../utils/handicap';
 
 interface Props {
   players: Player[];
@@ -157,16 +158,24 @@ export default function SetupScreen({
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-neutral-400 mb-1 block">Handicap</label>
+                  <label className="text-xs text-neutral-400 mb-1 block">Index</label>
                   <input
                     type="number"
+                    step="0.1"
+                    inputMode="decimal"
                     value={player.handicap || ''}
                     onChange={(e) =>
-                      onUpdatePlayer(player.id, 'handicap', parseInt(e.target.value) || 0)
+                      onUpdatePlayer(player.id, 'handicap', parseFloat(e.target.value) || 0)
                     }
-                    placeholder="0"
+                    placeholder="e.g. 4.7"
                     className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
                   />
+                  <div className="mt-2">
+                    <label className="text-xs text-neutral-400 mb-1 block">Handicap</label>
+                    <div className="w-full bg-neutral-950 text-red-400 rounded-lg px-3 py-2 text-sm border border-neutral-800 font-bold">
+                      {toCourseHandicap(player.handicap || 0)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
