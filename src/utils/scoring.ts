@@ -3,10 +3,11 @@
  *
  * Rules:
  * - Each team's two net scores form a two-digit number (lower digit first → e.g. 4,5 = 45)
- * - A NATURAL (gross) birdie by a team would normally flip the OPPONENT's number
- *   (higher digit first → e.g. 5,4 = 54)
- * - BUT if the opponent also has a NET birdie, that net birdie cancels the flip —
- *   the opponent keeps their number in normal low-high order.
+ * - A NATURAL (gross) birdie normally flips the OPPONENT's number
+ *   (higher digit first → e.g. 5,4 = 54).
+ * - The opponent's NET birdie shields them — the gross-birdie flip is cancelled.
+ * - A NET EAGLE is stronger than a gross birdie: it flips the opponent and
+ *   cannot be shielded by a net birdie.
  * - Points = opponent's number - your number (positive = you win)
  */
 export function calculateVegasPoints(
@@ -16,19 +17,20 @@ export function calculateVegasPoints(
   team1Gross: [number, number],
   team2Gross: [number, number]
 ): { team1Vegas: number; team2Vegas: number; points: number } {
-  // Gross birdie triggers the flip; net birdie on the victim shields it.
   const team1HasGrossBirdie = team1Gross[0] <= par - 1 || team1Gross[1] <= par - 1;
   const team2HasGrossBirdie = team2Gross[0] <= par - 1 || team2Gross[1] <= par - 1;
   const team1HasNetBirdie = team1Scores[0] <= par - 1 || team1Scores[1] <= par - 1;
   const team2HasNetBirdie = team2Scores[0] <= par - 1 || team2Scores[1] <= par - 1;
+  const team1HasNetEagle = team1Scores[0] <= par - 2 || team1Scores[1] <= par - 2;
+  const team2HasNetEagle = team2Scores[0] <= par - 2 || team2Scores[1] <= par - 2;
 
   const sorted1 = [...team1Scores].sort((a, b) => a - b) as [number, number];
   const sorted2 = [...team2Scores].sort((a, b) => a - b) as [number, number];
 
-  // Team 1's number flips only if team 2 made a gross birdie AND team 1
-  // doesn't have a net birdie of its own to cancel it.
-  const flipTeam1 = team2HasGrossBirdie && !team1HasNetBirdie;
-  const flipTeam2 = team1HasGrossBirdie && !team2HasNetBirdie;
+  // Net eagle always flips the opponent (trumps any net-birdie shield).
+  // Gross birdie flips unless the opponent has at least a net birdie.
+  const flipTeam1 = team2HasNetEagle || (team2HasGrossBirdie && !team1HasNetBirdie);
+  const flipTeam2 = team1HasNetEagle || (team1HasGrossBirdie && !team2HasNetBirdie);
 
   const team1Vegas = flipTeam1
     ? sorted1[1] * 10 + sorted1[0]
