@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Player, Match, HoleSetup, Multiplier, HandicapMode } from '../types';
 import { getNetScore } from '../utils/scoring';
-import { getStrokesOnHole, toCourseHandicap } from '../utils/handicap';
+import { getStrokesOnHole, toCourseHandicap, coursePar } from '../utils/handicap';
 
 interface Props {
   players: Player[];
   holes: HoleSetup[];
   matches: Match[];
   scores: Record<string, Record<number, number>>;
+  courseRating: number;
+  courseSlope: number;
   currentHole: number;
   onSetCurrentHole: (hole: number) => void;
   onSetScore: (playerId: string, holeNumber: number, grossScore: number) => void;
@@ -34,6 +36,8 @@ export default function HoleEntry({
   players,
   holes,
   scores,
+  courseRating,
+  courseSlope,
   currentHole,
   onSetCurrentHole,
   onSetScore,
@@ -62,6 +66,7 @@ export default function HoleEntry({
   const [newMatchTeam1, setNewMatchTeam1] = useState<[string, string]>(['', '']);
   const [newMatchTeam2, setNewMatchTeam2] = useState<[string, string]>(['', '']);
   const hole = holes.find((h) => h.number === currentHole)!;
+  const parTotal = coursePar(holes);
   const activeMatches = getActiveMatches();
   const rotation = getCurrentRotation();
 
@@ -135,7 +140,7 @@ export default function HoleEntry({
                     <div className="mt-2">
                       <label className="text-xs text-neutral-400 mb-1 block">Handicap</label>
                       <div className="w-full bg-neutral-900 text-red-400 rounded-lg px-3 py-2 text-sm border border-neutral-700 font-bold">
-                        {toCourseHandicap(player.handicap || 0)}
+                        {toCourseHandicap(player.handicap || 0, courseSlope, courseRating, parTotal)}
                       </div>
                     </div>
                   </div>
