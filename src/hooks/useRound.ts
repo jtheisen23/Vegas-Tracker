@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Player, Match, HoleSetup, Round, Screen, SavedRound, MatchResult, Multiplier, HandicapMode } from '../types';
-import { calculateStrokesReceived } from '../utils/handicap';
+import { Player, Match, HoleSetup, Course, Round, Screen, SavedRound, MatchResult, Multiplier, HandicapMode } from '../types';
+import { calculateStrokesReceived, coursePar } from '../utils/handicap';
+import { GENEVA_COURSE } from '../utils/courses';
 import { calculateVegasPoints, getNetScore } from '../utils/scoring';
 import { saveRound } from '../utils/storage';
 
@@ -8,14 +9,7 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
 
-const GENEVA_PARS = [4, 4, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 3, 3, 4, 4, 4];
-const GENEVA_HDCPS = [1, 3, 9, 13, 17, 15, 5, 7, 11, 8, 2, 10, 14, 16, 18, 4, 6, 12];
-
-const DEFAULT_HOLES: HoleSetup[] = GENEVA_PARS.map((par, i) => ({
-  number: i + 1,
-  par,
-  handicapRating: GENEVA_HDCPS[i],
-}));
+const DEFAULT_HOLES: HoleSetup[] = GENEVA_COURSE.holes.map((h) => ({ ...h }));
 
 const ACTIVE_ROUND_KEY = 'vegas-golf-active-round';
 
@@ -43,17 +37,34 @@ export function useRound() {
   const [matches, setMatches] = useState<Match[]>(saved?.matches || []);
   const [scores, setScores] = useState<Record<string, Record<number, number>>>(saved?.scores || {});
   const [currentHole, setCurrentHole] = useState(saved?.currentHole || 1);
-  const [courseName, setCourseName] = useState(saved?.courseName || 'Geneva Golf Club');
+  const [courseName, setCourseName] = useState(saved?.courseName || GENEVA_COURSE.name);
+  const [courseRating, setCourseRating] = useState<number>(saved?.courseRating ?? GENEVA_COURSE.rating);
+  const [courseSlope, setCourseSlope] = useState<number>(saved?.courseSlope ?? GENEVA_COURSE.slope);
+  // Which library course is currently loaded (for the course picker / save-changes).
+  const [courseId, setCourseId] = useState<string>(saved?.courseId || GENEVA_COURSE.id);
   const [pointValue, setPointValue] = useState(saved?.pointValue || 0.5);
   const [handicapMode, setHandicapMode] = useState<HandicapMode>(saved?.handicapMode || 'off-the-low');
   // matchId -> holeNumber -> Multiplier
   const [multipliers, setMultipliers] = useState<Record<string, Record<number, Multiplier>>>(saved?.multipliers || {});
 
+  // Total par is always derived from the current hole pars, so it can't
+  // drift from what the user sets in the Course step.
+  const parTotal = coursePar(holes);
+
   // Auto-save active round state to localStorage
   useEffect(() => {
-    const state = { screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers, handicapMode };
+    const state = { screen, players, holes, matches, scores, currentHole, courseName, courseRating, courseSlope, courseId, pointValue, multipliers, handicapMode };
     localStorage.setItem(ACTIVE_ROUND_KEY, JSON.stringify(state));
-  }, [screen, players, holes, matches, scores, currentHole, courseName, pointValue, multipliers, handicapMode]);
+  }, [screen, players, holes, matches, scores, currentHole, courseName, courseRating, courseSlope, courseId, pointValue, multipliers, handicapMode]);
+
+  // Load a saved library course into the active round (name, ratings, holes).
+  const applyCourse = useCallback((course: Course) => {
+    setCourseId(course.id);
+    setCourseName(course.name);
+    setCourseRating(course.rating);
+    setCourseSlope(course.slope);
+    setHoles(course.holes.map((h) => ({ ...h })));
+  }, []);
 
   const addPlayer = useCallback(() => {
     if (players.length >= 5) return;
@@ -118,8 +129,10 @@ export function useRound() {
   }, []);
 
   const recalculateStrokes = useCallback(() => {
-    setPlayers((prev) => calculateStrokesReceived(prev, handicapMode));
-  }, [handicapMode]);
+    setPlayers((prev) =>
+      calculateStrokesReceived(prev, handicapMode, { rating: courseRating, slope: courseSlope, par: parTotal }),
+    );
+  }, [handicapMode, courseRating, courseSlope, parTotal]);
 
   // Load a previously-saved round back into active state so it can be edited.
   const loadSavedRound = useCallback((saved: SavedRound) => {
@@ -128,6 +141,10 @@ export function useRound() {
     setMatches(saved.matches);
     setScores(saved.scores);
     setCourseName(saved.courseName);
+    setCourseRating(saved.courseRating ?? GENEVA_COURSE.rating);
+    setCourseSlope(saved.courseSlope ?? GENEVA_COURSE.slope);
+    // A historical round is a snapshot, not a library course.
+    setCourseId('');
     setPointValue(saved.pointsPerDollar);
     setMultipliers(saved.multipliers || {});
     setCurrentHole(1);
@@ -150,7 +167,7 @@ export function useRound() {
   }, []);
 
   const startRound = useCallback(() => {
-    const updated = calculateStrokesReceived(players, handicapMode);
+    const updated = calculateStrokesReceived(players, handicapMode, { rating: courseRating, slope: courseSlope, par: parTotal });
     setPlayers(updated);
     // Initialize empty scores
     const initialScores: Record<string, Record<number, number>> = {};
@@ -160,7 +177,7 @@ export function useRound() {
     setScores(initialScores);
     setCurrentHole(1);
     setScreen('holes');
-  }, [players, handicapMode]);
+  }, [players, handicapMode, courseRating, courseSlope, parTotal]);
 
   const setScore = useCallback((playerId: string, holeNumber: number, grossScore: number) => {
     setScores((prev) => ({
@@ -296,6 +313,8 @@ export function useRound() {
       id: generateId(),
       date: new Date().toISOString(),
       courseName,
+      courseRating,
+      courseSlope,
       players,
       holes,
       matches,
@@ -320,7 +339,7 @@ export function useRound() {
     setScores({});
     setMultipliers({});
     setCurrentHole(1);
-  }, [matches, getMatchTotal, players, courseName, holes, scores, pointValue]);
+  }, [matches, getMatchTotal, players, courseName, courseRating, courseSlope, holes, scores, pointValue]);
 
   return {
     screen,
@@ -343,6 +362,14 @@ export function useRound() {
     setCurrentHole,
     courseName,
     setCourseName,
+    courseRating,
+    setCourseRating,
+    courseSlope,
+    setCourseSlope,
+    courseId,
+    setCourseId,
+    applyCourse,
+    coursePar: parTotal,
     pointValue,
     setPointValue,
     startRound,

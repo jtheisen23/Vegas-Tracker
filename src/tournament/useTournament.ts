@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { sync } from './sync';
 import { nextDateForDay } from './dateUtils';
+import { applyAllowance, courseHandicap } from './ghin';
 import type { PlayDay, Tournament, TourGroup, TourHole, TourPlayer, TournamentFormat } from './types';
+import type { Course } from '../types';
 
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
@@ -181,8 +183,63 @@ export function useTournament(eventId: string | null) {
   );
 
   const updateMeta = useCallback(
-    (patch: Partial<Pick<Tournament, 'name' | 'courseName' | 'date' | 'format' | 'handicapAllowance' | 'playDay'>>) => {
+    (patch: Partial<Pick<Tournament, 'name' | 'courseName' | 'courseId' | 'date' | 'format' | 'handicapAllowance' | 'playDay'>>) => {
       mutate((t) => ({ ...t, ...patch }));
+    },
+    [mutate],
+  );
+
+  // Set course rating and/or slope and recompute every player's course
+  // handicap against the new values.
+  const setCourseRatings = useCallback(
+    (patch: { rating?: number; slope?: number }) => {
+      mutate((t) => {
+        const rating = patch.rating ?? t.courseRating;
+        const slope = patch.slope ?? t.courseSlope;
+        const par = t.holes.reduce((sum, h) => sum + h.par, 0);
+        const players: Record<string, TourPlayer> = {};
+        Object.values(t.players).forEach((p) => {
+          const ch = applyAllowance(
+            courseHandicap(p.handicapIndex, slope ?? 113, rating, par),
+            t.handicapAllowance,
+          );
+          players[p.id] = { ...p, courseHandicap: ch };
+        });
+        return { ...t, courseRating: rating, courseSlope: slope, players };
+      });
+    },
+    [mutate],
+  );
+
+  // Load a saved library course into the tournament: name, ratings, and hole
+  // pars/stroke indexes. Every player's course handicap is recomputed against
+  // the new slope/rating/par so the leaderboard stays correct.
+  const applyCourse = useCallback(
+    (course: Course) => {
+      mutate((t) => {
+        const holes: TourHole[] = course.holes.map((h) => ({
+          number: h.number,
+          par: h.par,
+          handicapRating: h.handicapRating,
+        }));
+        const par = holes.reduce((sum, h) => sum + h.par, 0);
+        const players: Record<string, TourPlayer> = {};
+        Object.values(t.players).forEach((p) => {
+          const ch = applyAllowance(
+            courseHandicap(p.handicapIndex, course.slope, course.rating, par),
+            t.handicapAllowance,
+          );
+          players[p.id] = { ...p, courseHandicap: ch };
+        });
+        return {
+          ...t,
+          courseName: course.name,
+          courseRating: course.rating,
+          courseSlope: course.slope,
+          holes,
+          players,
+        };
+      });
     },
     [mutate],
   );
@@ -199,5 +256,7 @@ export function useTournament(eventId: string | null) {
     setGroups,
     updateHole,
     updateMeta,
+    setCourseRatings,
+    applyCourse,
   };
 }

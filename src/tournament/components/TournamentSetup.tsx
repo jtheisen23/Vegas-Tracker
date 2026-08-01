@@ -4,9 +4,16 @@ import { generateId } from '../useTournament';
 import { randomizeGroups } from '../randomize';
 import { PLAY_DAYS, PLAY_DAY_LABELS, nextDateForDay } from '../dateUtils';
 import type { PlayDay, Tournament, TourGroup, TourPlayer } from '../types';
+import type { Course } from '../../types';
 
 interface Props {
   tournament: Tournament;
+  courses: Course[];
+  onApplyCourse: (course: Course) => void;
+  onSetCourseRatings: (patch: { rating?: number; slope?: number }) => void;
+  onSaveAsNewCourse: () => void;
+  onUpdateCourse: () => void;
+  onDeleteCourse: (id: string) => void;
   onAddPlayer: (p: TourPlayer) => void;
   onUpdatePlayer: (id: string, patch: Partial<TourPlayer>) => void;
   onRemovePlayer: (id: string) => void;
@@ -23,6 +30,12 @@ type Tab = 'details' | 'players' | 'groups' | 'holes';
 
 export default function TournamentSetup({
   tournament,
+  courses,
+  onApplyCourse,
+  onSetCourseRatings,
+  onSaveAsNewCourse,
+  onUpdateCourse,
+  onDeleteCourse,
   onAddPlayer,
   onUpdatePlayer,
   onRemovePlayer,
@@ -41,8 +54,22 @@ export default function TournamentSetup({
   const assignedIds = new Set(tournament.groups.flatMap((g) => g.playerIds));
   const unassigned = players.filter((p) => !assignedIds.has(p.id));
 
+  const parTotal = tournament.holes.reduce((sum, h) => sum + h.par, 0);
+  const isSavedCourse = courses.some((c) => c.id === tournament.courseId);
+
   const recomputeCourseHandicap = (p: TourPlayer): number =>
-    applyAllowance(courseHandicap(p.handicapIndex), tournament.handicapAllowance);
+    applyAllowance(
+      courseHandicap(p.handicapIndex, tournament.courseSlope ?? 113, tournament.courseRating, parTotal),
+      tournament.handicapAllowance,
+    );
+
+  const handleDeleteCourse = () => {
+    const course = courses.find((c) => c.id === tournament.courseId);
+    if (!course) return;
+    if (confirm(`Delete "${course.name}" from your saved courses?`)) {
+      onDeleteCourse(course.id);
+    }
+  };
 
   const handleAddPlayer = () => {
     const id = generateId();
@@ -64,7 +91,10 @@ export default function TournamentSetup({
       };
       if (!tournament.players[playerId].name) patch.name = result.name;
       onUpdatePlayer(playerId, patch);
-      const ch = applyAllowance(courseHandicap(result.handicapIndex), tournament.handicapAllowance);
+      const ch = recomputeCourseHandicap({
+        ...tournament.players[playerId],
+        handicapIndex: result.handicapIndex,
+      });
       onUpdatePlayer(playerId, { courseHandicap: ch });
       setGhinLookup((s) => ({ ...s, [playerId]: { loading: false } }));
     } catch (err) {
@@ -128,13 +158,95 @@ export default function TournamentSetup({
               placeholder="Spring Invitational"
             />
           </Field>
-          <Field label="Course">
+          <div className="bg-neutral-900 rounded-lg p-3 space-y-3">
+            <div className="text-xs text-neutral-400 uppercase tracking-wide">Saved courses</div>
+            <div className="flex gap-2">
+              <select
+                value={isSavedCourse ? tournament.courseId : ''}
+                onChange={(e) => {
+                  const course = courses.find((c) => c.id === e.target.value);
+                  if (course) onApplyCourse(course);
+                }}
+                className="input flex-1"
+              >
+                {!isSavedCourse && (
+                  <option value="">
+                    {tournament.courseName ? `${tournament.courseName} (unsaved)` : 'Unsaved course'}
+                  </option>
+                )}
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleDeleteCourse}
+                disabled={!isSavedCourse || courses.length <= 1}
+                className="px-3 py-2 text-xs bg-red-900/40 text-red-300 disabled:opacity-40 rounded whitespace-nowrap"
+              >
+                Delete
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onUpdateCourse}
+                disabled={!isSavedCourse}
+                className="flex-1 py-2 text-sm bg-neutral-800 border border-neutral-700 text-neutral-200 disabled:text-neutral-600 rounded font-medium"
+              >
+                Save Changes
+              </button>
+              <button
+                type="button"
+                onClick={onSaveAsNewCourse}
+                className="flex-1 py-2 text-sm bg-emerald-700 text-white rounded font-medium"
+              >
+                Save as New
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500">
+              Load a saved course to fill in its ratings and hole setup below. Recomputes every
+              player's course handicap.
+            </p>
+          </div>
+
+          <Field label="Course name">
             <input
               value={tournament.courseName}
               onChange={(e) => onUpdateMeta({ courseName: e.target.value })}
               className="input"
             />
           </Field>
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="Rating">
+              <input
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                value={tournament.courseRating ?? ''}
+                onChange={(e) =>
+                  onSetCourseRatings({ rating: e.target.value === '' ? undefined : Number(e.target.value) })
+                }
+                placeholder="70.0"
+                className="input"
+              />
+            </Field>
+            <Field label="Slope">
+              <input
+                type="number"
+                inputMode="numeric"
+                value={tournament.courseSlope ?? ''}
+                onChange={(e) =>
+                  onSetCourseRatings({ slope: e.target.value === '' ? undefined : Number(e.target.value) })
+                }
+                placeholder="113"
+                className="input"
+              />
+            </Field>
+            <Field label="Par">
+              <div className="input flex items-center text-neutral-300">{parTotal}</div>
+            </Field>
+          </div>
           <Field label="Date">
             <input
               type="date"

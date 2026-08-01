@@ -1,12 +1,20 @@
 import { useState } from 'react';
-import { Player, Match, HoleSetup, HandicapMode } from '../types';
-import { toCourseHandicap } from '../utils/handicap';
+import { Player, Match, HoleSetup, Course, HandicapMode } from '../types';
+import { toCourseHandicap, coursePar } from '../utils/handicap';
 
 interface Props {
   players: Player[];
   holes: HoleSetup[];
   matches: Match[];
   courseName: string;
+  courseRating: number;
+  courseSlope: number;
+  courses: Course[];
+  courseId: string;
+  onApplyCourse: (course: Course) => void;
+  onSaveAsNewCourse: () => void;
+  onUpdateCourse: () => void;
+  onDeleteCourse: (id: string) => void;
   pointValue: number;
   onUpdatePlayer: (id: string, field: keyof Player, value: string | number) => void;
   onAddPlayer: () => void;
@@ -17,6 +25,8 @@ interface Props {
   onRemoveMatch: (matchId: string) => void;
   onSetMatches: (matches: Match[]) => void;
   onSetCourseName: (name: string) => void;
+  onSetCourseRating: (value: number) => void;
+  onSetCourseSlope: (value: number) => void;
   onSetPointValue: (value: number) => void;
   handicapMode: HandicapMode;
   onSetHandicapMode: (mode: HandicapMode) => void;
@@ -31,6 +41,14 @@ export default function SetupScreen({
   holes,
   matches,
   courseName,
+  courseRating,
+  courseSlope,
+  courses,
+  courseId,
+  onApplyCourse,
+  onSaveAsNewCourse,
+  onUpdateCourse,
+  onDeleteCourse,
   pointValue,
   onUpdatePlayer,
   onAddPlayer,
@@ -40,6 +58,8 @@ export default function SetupScreen({
   onRemoveMatch,
   onSetMatches,
   onSetCourseName,
+  onSetCourseRating,
+  onSetCourseSlope,
   onSetPointValue,
   handicapMode,
   onSetHandicapMode,
@@ -59,6 +79,16 @@ export default function SetupScreen({
   const [newMatchTeam2, setNewMatchTeam2] = useState<[string, string]>(['', '']);
 
   const canProceedFromPlayers = players.length >= 4 && players.every((p) => p.name.trim());
+  const parTotal = coursePar(holes);
+  const isSavedCourse = courses.some((c) => c.id === courseId);
+
+  const handleDeleteCourse = () => {
+    const course = courses.find((c) => c.id === courseId);
+    if (!course) return;
+    if (window.confirm(`Delete "${course.name}" from your saved courses?`)) {
+      onDeleteCourse(course.id);
+    }
+  };
 
   const handleAddMatch = () => {
     if (newMatchTeam1[0] && newMatchTeam1[1] && newMatchTeam2[0] && newMatchTeam2[1]) {
@@ -173,7 +203,7 @@ export default function SetupScreen({
                   <div className="mt-2">
                     <label className="text-xs text-neutral-400 mb-1 block">Handicap</label>
                     <div className="w-full bg-neutral-950 text-red-400 rounded-lg px-3 py-2 text-sm border border-neutral-800 font-bold">
-                      {toCourseHandicap(player.handicap || 0)}
+                      {toCourseHandicap(player.handicap || 0, courseSlope, courseRating, parTotal)}
                     </div>
                   </div>
                 </div>
@@ -237,8 +267,56 @@ export default function SetupScreen({
       {/* Course Step */}
       {step === 'course' && (
         <div className="space-y-4">
+          {/* Saved course library */}
+          <div className="bg-neutral-900 rounded-xl p-4 space-y-3">
+            <label className="text-xs text-neutral-400 block">Saved Courses</label>
+            <div className="flex gap-2">
+              <select
+                value={isSavedCourse ? courseId : ''}
+                onChange={(e) => {
+                  const course = courses.find((c) => c.id === e.target.value);
+                  if (course) onApplyCourse(course);
+                }}
+                className="flex-1 bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
+              >
+                {!isSavedCourse && (
+                  <option value="">{courseName ? `${courseName} (unsaved)` : 'Unsaved course'}</option>
+                )}
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleDeleteCourse}
+                disabled={!isSavedCourse || courses.length <= 1}
+                className="bg-neutral-800 border border-neutral-700 text-red-400 disabled:text-neutral-600 px-3 py-2 rounded-lg text-sm"
+              >
+                Delete
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={onUpdateCourse}
+                disabled={!isSavedCourse}
+                className="flex-1 bg-neutral-800 border border-neutral-700 text-neutral-200 disabled:text-neutral-600 py-2 rounded-lg text-sm font-medium"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={onSaveAsNewCourse}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm font-medium"
+              >
+                Save as New
+              </button>
+            </div>
+            <p className="text-xs text-neutral-500">
+              Pick a course to load its ratings and hole setup. Edit the fields below, then Save
+              Changes to update it or Save as New to add another course.
+            </p>
+          </div>
+
           <div>
-            <label className="text-xs text-neutral-400 mb-1 block">Course Name (optional)</label>
+            <label className="text-xs text-neutral-400 mb-1 block">Course Name</label>
             <input
               type="text"
               value={courseName}
@@ -247,6 +325,43 @@ export default function SetupScreen({
               className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
             />
           </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-neutral-400 mb-1 block">Course Rating</label>
+              <input
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                value={courseRating || ''}
+                onChange={(e) => onSetCourseRating(parseFloat(e.target.value) || 0)}
+                placeholder="e.g. 70.0"
+                className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-neutral-400 mb-1 block">Slope</label>
+              <input
+                type="number"
+                inputMode="numeric"
+                value={courseSlope || ''}
+                onChange={(e) => onSetCourseSlope(parseInt(e.target.value) || 0)}
+                placeholder="e.g. 132"
+                min={55}
+                max={155}
+                className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm border border-neutral-700 focus:border-red-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-neutral-400 mb-1 block">Par</label>
+              <div className="w-full bg-neutral-950 text-neutral-300 rounded-lg px-3 py-2 text-sm border border-neutral-800 font-bold">
+                {parTotal}
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-500">
+            Rating &amp; slope drive the Course Handicap. Par is totaled from the hole pars below.
+          </p>
 
           <h2 className="text-lg font-semibold text-neutral-200">Hole Setup</h2>
           <p className="text-xs text-neutral-400">Set par and handicap rating (difficulty 1=hardest) for each hole.</p>

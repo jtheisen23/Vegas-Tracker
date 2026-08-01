@@ -1,7 +1,7 @@
 import { Player, Match, Multiplier, HoleSetup, MatchResult } from '../types';
 import ShareMenu from './ShareMenu';
 import { computePerformances, findMVP, formatDifferential } from '../utils/performance';
-import { toCourseHandicap } from '../utils/handicap';
+import { toCourseHandicap, coursePar } from '../utils/handicap';
 
 interface Props {
   players: Player[];
@@ -9,6 +9,8 @@ interface Props {
   holes: HoleSetup[];
   scores: Record<string, Record<number, number>>;
   courseName: string;
+  courseRating: number;
+  courseSlope: number;
   pointValue: number;
   getMatchTotal: (match: Match) => number;
   getPlayerMoney: (playerId: string) => number;
@@ -25,6 +27,8 @@ export default function Scoreboard({
   holes,
   scores,
   courseName,
+  courseRating,
+  courseSlope,
   pointValue,
   getMatchTotal,
   getPlayerMoney,
@@ -35,6 +39,7 @@ export default function Scoreboard({
   getMultiplierValue,
 }: Props) {
   // --- Post-round summary calculations ---
+  const parTotal = coursePar(holes);
 
   // Money rankings
   const moneyRankings = players
@@ -252,7 +257,7 @@ export default function Scoreboard({
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-neutral-400">
-                    Idx {player.handicap} · CH {toCourseHandicap(player.handicap)} · Shot{' '}
+                    Idx {player.handicap} · CH {toCourseHandicap(player.handicap, courseSlope, courseRating, parTotal)} · Shot{' '}
                     {perf.holesPlayed > 0
                       ? perf.scoreToPar === 0
                         ? 'E'

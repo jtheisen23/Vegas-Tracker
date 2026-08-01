@@ -25,10 +25,28 @@ export interface HoleSetup {
   handicapRating: number;
 }
 
+/** Course-level ratings used in the Handicap-Index → Course-Handicap formula. */
+export interface CourseRatings {
+  rating: number; // course rating
+  slope: number; // slope rating
+  par: number; // total par (derived from hole pars)
+}
+
+/** A saved course in the library: ratings plus its per-hole pars/stroke indexes. */
+export interface Course {
+  id: string;
+  name: string;
+  rating: number;
+  slope: number;
+  holes: HoleSetup[];
+}
+
 export interface Round {
   id: string;
   date: string;
   courseName: string;
+  courseRating: number;
+  courseSlope: number;
   players: Player[];
   holes: HoleSetup[];
   matches: Match[];

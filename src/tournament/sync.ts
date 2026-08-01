@@ -1,6 +1,7 @@
 import type { Tournament } from './types';
 import { LocalSync } from './localSync';
-import { FirebaseSync, getFirebaseConfig } from './firebaseSync';
+import { FirebaseSync } from './firebaseSync';
+import { getDb } from '../firebase';
 
 /**
  * SyncAdapter abstracts tournament state propagation so UI code stays the
@@ -18,8 +19,8 @@ export interface SyncAdapter {
 }
 
 function createSync(): { adapter: SyncAdapter; kind: 'firebase' | 'local' } {
-  const fb = getFirebaseConfig();
-  if (fb) return { adapter: new FirebaseSync(fb), kind: 'firebase' };
+  const db = getDb();
+  if (db) return { adapter: new FirebaseSync(db), kind: 'firebase' };
   return { adapter: new LocalSync(), kind: 'local' };
 }
 

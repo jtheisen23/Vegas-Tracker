@@ -48,7 +48,11 @@ export default function Registration({ tournament, onAddPlayer, onRemovePlayer, 
       return;
     }
     const idx = Number(index) || 0;
-    const ch = applyAllowance(courseHandicap(idx), tournament.handicapAllowance);
+    const parTotal = tournament.holes.reduce((sum, h) => sum + h.par, 0);
+    const ch = applyAllowance(
+      courseHandicap(idx, tournament.courseSlope ?? 113, tournament.courseRating, parTotal),
+      tournament.handicapAllowance,
+    );
     onAddPlayer({
       id: generateId(),
       name: name.trim(),
