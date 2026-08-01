@@ -32,6 +32,15 @@ export interface CourseRatings {
   par: number; // total par (derived from hole pars)
 }
 
+/** A saved course in the library: ratings plus its per-hole pars/stroke indexes. */
+export interface Course {
+  id: string;
+  name: string;
+  rating: number;
+  slope: number;
+  holes: HoleSetup[];
+}
+
 export interface Round {
   id: string;
   date: string;

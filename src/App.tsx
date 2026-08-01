@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRound } from './hooks/useRound';
+import { useCourses } from './hooks/useCourses';
+import { GENEVA_COURSE } from './utils/courses';
 import SetupScreen from './components/SetupScreen';
 import HoleEntry from './components/HoleEntry';
 import Scoreboard from './components/Scoreboard';
@@ -61,6 +63,38 @@ function ModePicker({ onPick }: { onPick: (hash: string) => void }) {
 
 function VegasApp({ onExit }: { onExit: () => void }) {
   const round = useRound();
+  const courseLib = useCourses();
+
+  // Save the current course setup as a brand-new library entry.
+  const saveAsNewCourse = () => {
+    const saved = courseLib.saveCourse({
+      name: round.courseName.trim() || 'Untitled Course',
+      rating: round.courseRating,
+      slope: round.courseSlope,
+      holes: round.holes,
+    });
+    round.setCourseId(saved.id);
+  };
+
+  // Write the current setup back onto the selected library course.
+  const updateCourse = () => {
+    courseLib.saveCourse({
+      id: round.courseId,
+      name: round.courseName.trim() || 'Untitled Course',
+      rating: round.courseRating,
+      slope: round.courseSlope,
+      holes: round.holes,
+    });
+  };
+
+  // Remove a course; if it was the active one, fall back to another.
+  const deleteCourse = (id: string) => {
+    courseLib.deleteCourse(id);
+    if (round.courseId === id) {
+      const fallback = courseLib.courses.find((c) => c.id !== id) ?? GENEVA_COURSE;
+      round.applyCourse(fallback);
+    }
+  };
 
   const resetVegas = () => {
     if (!confirm('Clear all Vegas data on this device (active round + saved history)?')) return;
@@ -186,6 +220,12 @@ function VegasApp({ onExit }: { onExit: () => void }) {
         courseName={round.courseName}
         courseRating={round.courseRating}
         courseSlope={round.courseSlope}
+        courses={courseLib.courses}
+        courseId={round.courseId}
+        onApplyCourse={round.applyCourse}
+        onSaveAsNewCourse={saveAsNewCourse}
+        onUpdateCourse={updateCourse}
+        onDeleteCourse={deleteCourse}
         pointValue={round.pointValue}
         onUpdatePlayer={round.updatePlayer}
         onAddPlayer={round.addPlayer}
