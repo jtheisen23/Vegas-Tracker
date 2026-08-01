@@ -1,11 +1,9 @@
-import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import {
   collection,
   deleteDoc,
   doc,
   type Firestore,
   getDocs,
-  getFirestore,
   onSnapshot,
   setDoc,
 } from 'firebase/firestore';
@@ -15,24 +13,6 @@ import type { Tournament } from './types';
 const INDEX_KEY = 'tg-fb-index';
 const cacheKey = (id: string) => `tg-fb-${id}`;
 const COLLECTION = 'tournaments';
-
-/**
- * Read Firebase config from Vite env vars. Returns null if the required
- * fields are missing so callers can fall back to LocalSync.
- */
-export function getFirebaseConfig(): FirebaseOptions | null {
-  const env = import.meta.env as Record<string, string | undefined>;
-  const cfg: FirebaseOptions = {
-    apiKey: env.VITE_FIREBASE_API_KEY,
-    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: env.VITE_FIREBASE_APP_ID,
-  };
-  if (!cfg.apiKey || !cfg.projectId) return null;
-  return cfg;
-}
 
 /**
  * FirebaseSync — real cross-device sync backed by Firestore.
@@ -49,6 +29,9 @@ export function getFirebaseConfig(): FirebaseOptions | null {
  *       match /tournaments/{id} {
  *         allow read, write: if true;
  *       }
+ *       match /courses/{id} {
+ *         allow read, write: if true;
+ *       }
  *     }
  *   }
  */
@@ -57,9 +40,8 @@ export class FirebaseSync implements SyncAdapter {
   private cache = new Map<string, Tournament>();
   private index: string[] = [];
 
-  constructor(config: FirebaseOptions) {
-    const app = initializeApp(config);
-    this.db = getFirestore(app);
+  constructor(db: Firestore) {
+    this.db = db;
     this.loadLocalCache();
     void this.hydrateFromCloud();
   }

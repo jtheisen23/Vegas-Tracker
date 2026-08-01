@@ -29,6 +29,9 @@ export interface Tournament {
   id: string;
   name: string;
   courseName: string;
+  courseId?: string; // which saved-library course is loaded (for the picker)
+  courseRating?: number; // course rating (optional; falls back to legacy handicap calc)
+  courseSlope?: number; // slope rating (optional; defaults to 113 = index as-is)
   date: string; // ISO date (YYYY-MM-DD)
   playDay?: PlayDay; // optional weekly tag: friday/sunday play
   holes: TourHole[];

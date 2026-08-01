@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Course } from '../types';
-import { loadCourses, persistCourses } from '../utils/courses';
+import { courseSync } from '../utils/courseSync';
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
@@ -9,12 +9,15 @@ function generateId(): string {
 export type CourseInput = Omit<Course, 'id'> & { id?: string };
 
 /**
- * Manages the saved course library (persisted to localStorage).
- * saveCourse upserts: with a matching id it updates that course, otherwise
- * it creates a new one. Returns the stored course (with its id).
+ * Manages the saved course library through the course sync adapter, so the
+ * library persists locally and — when Firebase is configured — syncs across
+ * devices. saveCourse upserts: with a matching id it updates that course,
+ * otherwise it creates a new one. Returns the stored course (with its id).
  */
 export function useCourses() {
-  const [courses, setCourses] = useState<Course[]>(() => loadCourses());
+  const [courses, setCourses] = useState<Course[]>(() => courseSync.load());
+
+  useEffect(() => courseSync.subscribe(setCourses), []);
 
   const saveCourse = useCallback((input: CourseInput): Course => {
     const id = input.id ?? generateId();
@@ -25,21 +28,18 @@ export function useCourses() {
       slope: input.slope,
       holes: input.holes.map((h) => ({ ...h })),
     };
+    courseSync.upsert(course);
+    // Optimistic local update (BroadcastChannel/onSnapshot won't echo to us).
     setCourses((prev) => {
       const exists = prev.some((c) => c.id === id);
-      const next = exists ? prev.map((c) => (c.id === id ? course : c)) : [...prev, course];
-      persistCourses(next);
-      return next;
+      return exists ? prev.map((c) => (c.id === id ? course : c)) : [...prev, course];
     });
     return course;
   }, []);
 
   const deleteCourse = useCallback((id: string) => {
-    setCourses((prev) => {
-      const next = prev.filter((c) => c.id !== id);
-      persistCourses(next);
-      return next;
-    });
+    courseSync.remove(id);
+    setCourses((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
   return { courses, saveCourse, deleteCourse };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTournament } from './useTournament';
+import { useCourses } from '../hooks/useCourses';
 import EventsList from './components/EventsList';
 import EventHome from './components/EventHome';
 import TournamentSetup from './components/TournamentSetup';
@@ -29,7 +30,42 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
   const sectionArg = parts[2] || null;
 
   const { tournament, setScore, addPlayer, updatePlayer, removePlayer,
-    addGroup, updateGroup, removeGroup, setGroups, updateHole, updateMeta } = useTournament(eventId);
+    addGroup, updateGroup, removeGroup, setGroups, updateHole, updateMeta,
+    setCourseRatings, applyCourse } = useTournament(eventId);
+  const courseLib = useCourses();
+
+  // Snapshot the tournament's current course setup as a library entry.
+  const courseFromTournament = (id?: string) => ({
+    id,
+    name: tournament?.courseName.trim() || 'Untitled Course',
+    rating: tournament?.courseRating ?? (tournament?.holes.reduce((s, h) => s + h.par, 0) ?? 72),
+    slope: tournament?.courseSlope ?? 113,
+    holes: (tournament?.holes ?? []).map((h) => ({
+      number: h.number,
+      par: h.par,
+      handicapRating: h.handicapRating,
+    })),
+  });
+
+  const saveAsNewCourse = () => {
+    if (!tournament) return;
+    const saved = courseLib.saveCourse(courseFromTournament());
+    updateMeta({ courseId: saved.id });
+  };
+
+  const updateCourse = () => {
+    if (!tournament?.courseId) return;
+    courseLib.saveCourse(courseFromTournament(tournament.courseId));
+  };
+
+  const deleteCourse = (id: string) => {
+    courseLib.deleteCourse(id);
+    if (tournament?.courseId === id) {
+      const fallback = courseLib.courses.find((c) => c.id !== id);
+      if (fallback) applyCourse(fallback);
+      else updateMeta({ courseId: undefined });
+    }
+  };
 
   // Grace window for Firestore to respond on a cold open. LocalSync is
   // synchronous so any missing record is immediately known.
@@ -90,6 +126,12 @@ export default function TournamentApp({ route, onNavigate, onExit }: Props) {
     return (
       <TournamentSetup
         tournament={tournament}
+        courses={courseLib.courses}
+        onApplyCourse={applyCourse}
+        onSetCourseRatings={setCourseRatings}
+        onSaveAsNewCourse={saveAsNewCourse}
+        onUpdateCourse={updateCourse}
+        onDeleteCourse={deleteCourse}
         onAddPlayer={addPlayer}
         onUpdatePlayer={updatePlayer}
         onRemovePlayer={removePlayer}
